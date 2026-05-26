@@ -1,19 +1,32 @@
 import { useState, useMemo } from "react";
 import { useLiveActuals, liveBadgeStyle } from "./liveActuals";
-import { useMockDatabase } from "./context/MockDatabaseContext";
-import { computeAllKPIs } from "./kpiEngine";
 import { BarChart, Bar, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ComposedChart, ReferenceLine } from "recharts";
 
-const ENTITIES = ["Global Consolidated", "North America", "EMEA", "APAC", "LATAM"];
+// ═══════════════════════════════════════════════
+// SAMPLE DATA — Fictional $2B Multi-Entity Enterprise
+// ═══════════════════════════════════════════════
 
-const ENTITY_REGIONS = {
-  "North America": ["NA"],
-  "EMEA": ["EU", "MEA"],
-  "APAC": ["APAC"],
-  "LATAM": ["LATAM"],
+const ENTITIES = ["Global Consolidated", "North America", "EMEA", "APAC", "LATAM"];
+const PERIODS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+const generateEntityData = (entity) => {
+  const base = {
+    "Global Consolidated": { dso: 38, cei: 82, bd: 0.32, fpm: 68, tr: 28, dct: 22, arRev: 4.2, ei: 42, arBalance: 248, revenue: 2100, overdue: 72, current: 176 },
+    "North America": { dso: 32, cei: 88, bd: 0.18, fpm: 78, tr: 18, dct: 15, arRev: 3.1, ei: 55, arBalance: 95, revenue: 880, overdue: 22, current: 73 },
+    "EMEA": { dso: 42, cei: 78, bd: 0.35, fpm: 65, tr: 30, dct: 24, arRev: 4.8, ei: 52, arBalance: 82, revenue: 620, overdue: 28, current: 54 },
+    "APAC": { dso: 45, cei: 75, bd: 0.42, fpm: 58, tr: 35, dct: 28, arRev: 5.5, ei: 30, arBalance: 48, revenue: 380, overdue: 16, current: 32 },
+    "LATAM": { dso: 52, cei: 70, bd: 0.55, fpm: 52, tr: 40, dct: 32, arRev: 6.2, ei: 18, arBalance: 23, revenue: 220, overdue: 6, current: 17 },
+  };
+  return base[entity];
 };
 
-const REGION_LABELS = { NA: "North America", EU: "EMEA", MEA: "EMEA", APAC: "APAC", LATAM: "LATAM" };
+const generateTrend = (baseVal, variance, improving = true) => {
+  return PERIODS.map((m, i) => {
+    const trend = improving ? -i * (variance / 14) : i * (variance / 14);
+    const noise = (Math.sin(i * 2.1) * variance * 0.3);
+    return { month: m, value: Math.round((baseVal + trend + noise) * 100) / 100 };
+  });
+};
 
 const BENCHMARKS = {
   dso: { median: 42, topQ: 32, wc: 28, label: "DSO", unit: "days", lower: true },
@@ -25,6 +38,77 @@ const BENCHMARKS = {
   arRev: { median: 5.2, topQ: 3.2, wc: 2.0, label: "AR Cost/$1K Rev", unit: "$", lower: true },
   ei: { median: 70, topQ: 85, wc: 95, label: "E-Invoice Rate", unit: "%", lower: false },
 };
+
+const AGING_DATA = {
+  "Global Consolidated": [
+    { bucket: "Current", amount: 176, pct: 71 },
+    { bucket: "1-30", amount: 32, pct: 13 },
+    { bucket: "31-60", amount: 18, pct: 7 },
+    { bucket: "61-90", amount: 12, pct: 5 },
+    { bucket: "90+", amount: 10, pct: 4 },
+  ],
+  "North America": [
+    { bucket: "Current", amount: 73, pct: 77 },
+    { bucket: "1-30", amount: 11, pct: 12 },
+    { bucket: "31-60", amount: 5, pct: 5 },
+    { bucket: "61-90", amount: 4, pct: 4 },
+    { bucket: "90+", amount: 2, pct: 2 },
+  ],
+  "EMEA": [
+    { bucket: "Current", amount: 54, pct: 66 },
+    { bucket: "1-30", amount: 12, pct: 15 },
+    { bucket: "31-60", amount: 8, pct: 10 },
+    { bucket: "61-90", amount: 5, pct: 6 },
+    { bucket: "90+", amount: 3, pct: 3 },
+  ],
+  "APAC": [
+    { bucket: "Current", amount: 32, pct: 67 },
+    { bucket: "1-30", amount: 6, pct: 12 },
+    { bucket: "31-60", amount: 4, pct: 8 },
+    { bucket: "61-90", amount: 3, pct: 7 },
+    { bucket: "90+", amount: 3, pct: 6 },
+  ],
+  "LATAM": [
+    { bucket: "Current", amount: 17, pct: 62 },
+    { bucket: "1-30", amount: 3, pct: 14 },
+    { bucket: "31-60", amount: 2, pct: 10 },
+    { bucket: "61-90", amount: 2, pct: 8 },
+    { bucket: "90+", amount: 1.5, pct: 6 },
+  ],
+};
+
+const DISPUTE_DATA = [
+  { reason: "Pricing Error", count: 142, avgDays: 18, value: 2.8 },
+  { reason: "Quantity Mismatch", count: 98, avgDays: 14, value: 1.9 },
+  { reason: "Delivery Issue", count: 87, avgDays: 22, value: 1.5 },
+  { reason: "Duplicate Invoice", count: 65, avgDays: 8, value: 1.2 },
+  { reason: "Quality / Returns", count: 54, avgDays: 28, value: 0.9 },
+  { reason: "Tax Discrepancy", count: 38, avgDays: 20, value: 0.6 },
+  { reason: "Missing PO", count: 32, avgDays: 12, value: 0.4 },
+  { reason: "Other", count: 24, avgDays: 15, value: 0.3 },
+];
+
+const TOP_DELINQUENT = [
+  { customer: "Meridian Industries", balance: 12.4, overdue: 8.2, dso: 68, risk: "High" },
+  { customer: "Apex Global Corp", balance: 9.8, overdue: 5.1, dso: 55, risk: "Medium" },
+  { customer: "NovaTech Solutions", balance: 8.5, overdue: 4.8, dso: 52, risk: "High" },
+  { customer: "Sterling Partners", balance: 7.2, overdue: 3.9, dso: 48, risk: "Medium" },
+  { customer: "Atlas Manufacturing", balance: 6.8, overdue: 3.5, dso: 45, risk: "Low" },
+  { customer: "Pinnacle Retail", balance: 5.9, overdue: 3.2, dso: 44, risk: "Medium" },
+  { customer: "Horizon Energy", balance: 5.4, overdue: 2.8, dso: 42, risk: "Low" },
+];
+
+const COLLECTION_ACTIVITY = PERIODS.map((m, i) => ({
+  month: m,
+  calls: 280 + Math.round(Math.sin(i * 0.8) * 40),
+  emails: 620 + Math.round(Math.cos(i * 0.6) * 80),
+  promises: 85 + Math.round(Math.sin(i * 1.2) * 20),
+  collected: 38 + Math.round(Math.sin(i * 0.5) * 8),
+}));
+
+// ═══════════════════════════════════════════════
+// COMPONENT
+// ═══════════════════════════════════════════════
 
 const C = {
   bg: "#07090e",
@@ -101,262 +185,59 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-function entityFilter(entity, invoices, cashApplications, disputes, customers) {
-  if (entity === "Global Consolidated") return { invoices, cashApplications, disputes, customers };
-  const regions = ENTITY_REGIONS[entity] || [];
-  const fInvs = invoices.filter(i => regions.includes(i.region));
-  const fCustIds = new Set(fInvs.map(i => i.customerId));
-  const fCusts = customers.filter(c => fCustIds.has(c.id));
-  const fInvIds = new Set(fInvs.map(i => i.id));
-  const fCas = cashApplications.filter(c => fInvIds.has(c.invoiceId));
-  const fDisp = disputes.filter(d => fInvIds.has(d.invoiceId));
-  return { invoices: fInvs, cashApplications: fCas, disputes: fDisp, customers: fCusts };
-}
-
-function computeEntityKpis(data) {
-  const { invoices, cashApplications, disputes } = data;
-  const open = invoices.filter(i => i.status !== 'paid' && i.status !== 'written_off');
-  const endingAR = open.reduce((s, i) => s + i.balance, 0);
-  const totalBilled = invoices.reduce((s, i) => s + i.amount, 0);
-  const PERIOD = 90;
-  const dso = totalBilled > 0 ? Math.round((endingAR / totalBilled) * PERIOD * 10) / 10 : 0;
-  const currentAR = open.filter(i => i.daysPastDue <= 0).reduce((s, i) => s + i.balance, 0);
-  const collected = cashApplications.reduce((s, c) => s + c.amountReceived, 0);
-  const beginningAR = endingAR + collected;
-  const ceiNum = beginningAR + totalBilled - endingAR;
-  const ceiDen = beginningAR + totalBilled - currentAR;
-  const cei = ceiDen > 0 ? Math.round((ceiNum / ceiDen) * 100 * 10) / 10 : 0;
-  const autoCount = cashApplications.filter(c => c.matchStatus === 'auto_matched').length;
-  const fpm = cashApplications.length > 0 ? Math.round((autoCount / cashApplications.length) * 1000) / 10 : 0;
-  const writeOffs = invoices.filter(i => i.status === 'written_off').reduce((s, i) => s + i.amount, 0);
-  const approvedClaims = disputes.filter(d => d.status === 'approved').reduce((s, d) => s + d.claimAmount, 0);
-  const bd = totalBilled > 0 ? Math.round(((writeOffs + approvedClaims) / totalBilled) * 100 * 100) / 100 : 0;
-  const manualCount = cashApplications.filter(c => c.matchStatus !== 'auto_matched').length;
-  const tr = cashApplications.length > 0 ? Math.round((manualCount / cashApplications.length) * 100 * 10) / 10 : 0;
-  const resolved = disputes.filter(d => d.resolutionCycleDays != null);
-  const dct = resolved.length > 0 ? Math.round(resolved.reduce((s, d) => s + d.resolutionCycleDays, 0) / resolved.length * 10) / 10 : 0;
-  const totalCost = invoices.reduce((s, i) => s + (i.costPerInvoice || 0), 0);
-  const arRev = totalBilled > 0 ? Math.round((totalCost / totalBilled) * 1000 * 100) / 100 : 0;
-  const eInvs = invoices.filter(i => i.eInvoiceStatus && i.eInvoiceStatus !== 'pending').length;
-  const ei = invoices.length > 0 ? Math.round((eInvs / invoices.length) * 100 * 10) / 10 : 0;
-  const arBalance = Math.round(endingAR / 1000000 * 10) / 10;
-  const ar90 = open.filter(i => i.daysPastDue > 90).reduce((s, i) => s + i.balance, 0);
-  const overdueM = Math.round(open.filter(i => i.daysPastDue > 0).reduce((s, i) => s + i.balance, 0) / 1000000 * 10) / 10;
-  const revenue = Math.round(totalBilled / 1000000 * 10) / 10;
-  return { dso, cei, bd: Math.min(bd, 10), fpm, tr, dct, arRev, ei, arBalance, revenue, overdue: overdueM, current: Math.round(currentAR / 1000000 * 10) / 10, ar90: Math.round(ar90 / 1000000 * 10) / 10 };
-}
-
-function computeAging(invoices) {
-  const open = invoices.filter(i => i.status !== 'paid' && i.status !== 'written_off');
-  const total = open.reduce((s, i) => s + i.balance, 0);
-  const buckets = [
-    { bucket: "Current", key: "current" },
-    { bucket: "1-30", key: "1-30" },
-    { bucket: "31-60", key: "31-60" },
-    { bucket: "61-90", key: "61-90" },
-    { bucket: "90+", key: "90+" },
-  ];
-  return buckets.map(b => {
-    const amount = open.filter(i => i.agingBucket === b.key).reduce((s, i) => s + i.balance, 0);
-    return { bucket: b.bucket, amount: Math.round(amount / 1000000 * 10) / 10, pct: total > 0 ? Math.round(amount / total * 100) : 0 };
-  });
-}
-
-function computeTopDelinquent(data, regionFilter) {
-  const { invoices, customers } = data;
-  const open = invoices.filter(i => i.status !== 'paid' && i.status !== 'written_off' && i.daysPastDue > 0);
-  const byCustomer = {};
-  open.forEach(i => {
-    if (!byCustomer[i.customerId]) byCustomer[i.customerId] = { balance: 0, overdue: 0, maxDpd: 0, region: i.region };
-    byCustomer[i.customerId].balance += i.balance;
-    byCustomer[i.customerId].overdue += i.balance;
-    byCustomer[i.customerId].maxDpd = Math.max(byCustomer[i.customerId].maxDpd, i.daysPastDue);
-  });
-  return Object.entries(byCustomer)
-    .filter(([id, _]) => !regionFilter || regionFilter === "All" || (REGION_LABELS[_.region] === regionFilter))
-    .map(([id, d]) => {
-      const cust = customers.find(c => c.id === id);
-      const risk = d.maxDpd > 60 ? "High" : d.maxDpd > 30 ? "Medium" : "Low";
-      return {
-        customer: cust ? cust.name : id,
-        customerId: id,
-        region: REGION_LABELS[d.region] || d.region,
-        balance: Math.round(d.balance / 1000000 * 100) / 100,
-        overdue: Math.round(d.overdue / 1000000 * 100) / 100,
-        dso: Math.round(d.maxDpd + 30),
-        risk,
-      };
-    })
-    .sort((a, b) => b.overdue - a.overdue)
-    .slice(0, 12);
-}
-
-function computeDisputeData(disputes) {
-  const byReason = {};
-  disputes.forEach(d => {
-    if (!byReason[d.reasonCode]) byReason[d.reasonCode] = { count: 0, totalDays: 0, resolved: 0, totalValue: 0 };
-    byReason[d.reasonCode].count++;
-    byReason[d.reasonCode].totalValue += d.claimAmount;
-    if (d.resolutionCycleDays != null) {
-      byReason[d.reasonCode].totalDays += d.resolutionCycleDays;
-      byReason[d.reasonCode].resolved++;
-    }
-  });
-  const reasonLabels = { shortage: "Shortage", pricing: "Pricing Error", damage: "Damage", quality: "Quality / Returns", compliance: "Compliance" };
-  return Object.entries(byReason)
-    .map(([code, d]) => ({
-      reason: reasonLabels[code] || code,
-      count: d.count,
-      avgDays: d.resolved > 0 ? Math.round(d.totalDays / d.resolved * 10) / 10 : 0,
-      value: Math.round(d.totalValue / 1000000 * 100) / 100,
-    }))
-    .sort((a, b) => b.count - a.count);
-}
-
-function computeCollectionActivity(collectionActivities) {
-  const byMonth = {};
-  collectionActivities.forEach(ca => {
-    const month = ca.activityDate ? ca.activityDate.slice(0, 7) : "unknown";
-    if (!byMonth[month]) byMonth[month] = { calls: 0, emails: 0, promises: 0, collected: 0 };
-    if (ca.activityType === 'call') byMonth[month].calls++;
-    else byMonth[month].emails++;
-    if (ca.outcome === 'promise_to_pay') byMonth[month].promises++;
-    if (ca.outcome === 'paid') byMonth[month].collected++;
-  });
-  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const currentYear = "2026";
-  return months.map((m, i) => {
-    const key = `${currentYear}-${String(i + 1).padStart(2, "0")}`;
-    const d = byMonth[key] || { calls: 0, emails: 0, promises: 0, collected: 0 };
-    // Scale counts up for visual (seed has ~170 activities, which is sparse per month)
-    const scale = collectionActivities.length > 100 ? 1 : 3;
-    return { month: m, calls: d.calls * scale || Math.round(4 + Math.sin(i * 0.8) * 2), emails: d.emails * scale || Math.round(8 + Math.cos(i * 0.6) * 3), promises: d.promises * scale || Math.round(2 + Math.sin(i * 1.2) * 1), collected: d.collected || Math.round(1 + Math.sin(i * 0.5) * 0.5) };
-  });
-}
-
-function computeProcessHealth(invoices, cashApplications, disputes, customers) {
-  const regions = ["NA", "EU", "APAC", "LATAM"];
-  const regionLabels = { NA: "North America", EU: "EMEA", APAC: "APAC", LATAM: "LATAM" };
-  const processes = [
-    { process: "Credit Management", keys: ["dso"] },
-    { process: "Order Management", keys: ["dso", "fpm"] },
-    { process: "Billing & Invoicing", keys: ["ei", "dso"] },
-    { process: "Cash Application", keys: ["fpm"] },
-    { process: "Collections", keys: ["cei"] },
-    { process: "Reporting & Governance", keys: ["dso", "cei"] },
-  ];
-  return processes.map(p => {
-    const scores = {};
-    regions.forEach(r => {
-      const fInvs = invoices.filter(i => i.region === r);
-      const fCas = cashApplications.filter(c => fInvs.some(iv => iv.id === c.invoiceId));
-      const fDisp = disputes.filter(d => fInvs.some(iv => iv.id === d.invoiceId));
-      const fCust = customers.filter(c => fInvs.some(iv => iv.customerId === c.id));
-      const kpis = computeEntityKpis({ invoices: fInvs, cashApplications: fCas, disputes: fDisp, customers: fCust });
-      const vals = p.keys.map(k => kpis[k] || 0);
-      scores[regionLabels[r]] = Math.min(100, Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * (p.keys.length > 1 ? 2 : 2.5)));
-    });
-    return { process: p.process, scores };
-  });
-}
-
 export default function ARDashboard() {
   const live = useLiveActuals();
-  const ctx = useMockDatabase() || {};
-  const { invoices = [], disputes = [], customers = [], cashApplications = [], collectionActivities = [] } = ctx;
-
   const [view, setView] = useState("executive");
   const [entity, setEntity] = useState("Global Consolidated");
   const [selectedKPI, setSelectedKPI] = useState(null);
-  const [selectedRegion, setSelectedRegion] = useState(null);
-
-  const filtered = useMemo(() => entityFilter(entity, invoices, cashApplications, disputes, customers), [entity, invoices, cashApplications, disputes, customers]);
 
   const data = useMemo(() => {
-    const base = computeEntityKpis(filtered);
+    const base = generateEntityData(entity);
+    // Overlay seed-authoritative live actuals on the consolidated view so the
+    // AR-KPI dashboard ties out exactly with the Command Center.
     if (live && entity === "Global Consolidated") {
-      return { ...base, dso: live.dso, fpm: live.autoMatch, bd: live.revenueLeakage, arBalance: live.totalARm };
+      return {
+        ...base,
+        dso: live.dso,
+        fpm: live.autoMatch,
+        bd: live.revenueLeakage,
+        arBalance: live.totalARm,
+      };
     }
     return base;
-  }, [filtered, entity, live]);
-
-  const aging = useMemo(() => {
-    if (live && entity === "Global Consolidated") {
-      const a = live.aging;
-      const total = Object.values(a).reduce((s, v) => s + v, 0);
-      const totalM = Math.round(total / 1000000 * 10) / 10;
-      const buckets = [
-        { bucket: "Current", amount: Math.round((a.current || 0) / 1000000 * 10) / 10 },
-        { bucket: "1-30", amount: Math.round((a['1-30'] || 0) / 1000000 * 10) / 10 },
-        { bucket: "31-60", amount: Math.round((a['31-60'] || 0) / 1000000 * 10) / 10 },
-        { bucket: "61-90", amount: Math.round((a['61-90'] || 0) / 1000000 * 10) / 10 },
-        { bucket: "90+", amount: Math.round((a['90+'] || 0) / 1000000 * 10) / 10 },
-      ];
-      return buckets.map(b => ({ ...b, pct: totalM > 0 ? Math.round(b.amount / totalM * 100) : 0 }));
-    }
-    return computeAging(filtered.invoices);
-  }, [filtered, entity, live]);
-
-  const topDelinquent = useMemo(() => computeTopDelinquent(filtered, selectedRegion), [filtered, selectedRegion]);
-
-  const disputeData = useMemo(() => computeDisputeData(disputes), [disputes]);
-
-  const collectionActivityData = useMemo(() => computeCollectionActivity(collectionActivities), [collectionActivities]);
-
-  const regionCompare = useMemo(() => {
-    const regions = ["NA", "EU", "APAC", "LATAM"];
-    const regionLabels = { NA: "North America", EU: "EMEA", APAC: "APAC", LATAM: "LATAM" };
-    return regions.map(r => {
-      const fInvs = invoices.filter(i => i.region === r);
-      const fCas = cashApplications.filter(c => fInvs.some(iv => iv.id === c.invoiceId));
-      const fDisp = disputes.filter(d => fInvs.some(iv => iv.id === d.invoiceId));
-      const fCust = customers.filter(c => fInvs.some(iv => iv.customerId === c.id));
-      const k = computeEntityKpis({ invoices: fInvs, cashApplications: fCas, disputes: fDisp, customers: fCust });
-      return { region: regionLabels[r], dso: k.dso, cei: k.cei, fpm: k.fpm, tr: k.tr, bd: k.bd };
-    });
-  }, [invoices, cashApplications, disputes, customers]);
-
-  const cashFlowData = useMemo(() => {
-    const totalBilledM = data.revenue;
-    const arBalanceM = data.arBalance;
-    return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, i) => {
-      const seasonal = 1 + Math.sin(i * 0.7) * 0.15;
-      return {
-        month: m,
-        billed: Math.round(totalBilledM / 12 * seasonal * 10) / 10,
-        collected: Math.round(totalBilledM / 12 * seasonal * 0.92 * 10) / 10,
-        netAR: Math.round((arBalanceM + Math.sin(i * 0.4) * arBalanceM * 0.08) * 10) / 10,
-      };
-    });
-  }, [data]);
-
-  const processHealth = useMemo(() => computeProcessHealth(invoices, cashApplications, disputes, customers), [invoices, cashApplications, disputes, customers]);
+  }, [entity, live]);
+  const aging = useMemo(() => AGING_DATA[entity] || AGING_DATA["Global Consolidated"], [entity]);
 
   const liveIds = (live && entity === "Global Consolidated") ? ["dso", "fpm", "bd"] : [];
 
   const kpiCards = [
-    { id: "dso", label: "DSO", value: data.dso, unit: "days" },
-    { id: "cei", label: "CEI", value: data.cei, unit: "%" },
-    { id: "bd", label: "Bad Debt %", value: data.bd, unit: "%" },
-    { id: "fpm", label: "Auto-Match Rate", value: data.fpm, unit: "%" },
-    { id: "tr", label: "Touch Rate", value: data.tr, unit: "%" },
-    { id: "dct", label: "Dispute Cycle", value: data.dct, unit: "days" },
-    { id: "arRev", label: "Cost/$1K Rev", value: data.arRev, unit: "$" },
-    { id: "ei", label: "E-Invoice Rate", value: data.ei, unit: "%" },
+    { id: "dso", label: "DSO", value: data.dso, unit: "days", icon: "📅" },
+    { id: "cei", label: "CEI", value: data.cei, unit: "%", icon: "📊" },
+    { id: "bd", label: "Bad Debt %", value: data.bd, unit: "%", icon: "⚠️" },
+    { id: "fpm", label: "Auto-Match Rate", value: data.fpm, unit: "%", icon: "🎯" },
+    { id: "tr", label: "Touch Rate", value: data.tr, unit: "%", icon: "👆" },
+    { id: "dct", label: "Dispute Cycle", value: data.dct, unit: "days", icon: "⚡" },
+    { id: "arRev", label: "Cost/$1K Rev", value: data.arRev, unit: "$", icon: "💰" },
+    { id: "ei", label: "E-Invoice Rate", value: data.ei, unit: "%", icon: "📄" },
   ];
 
   const trendData = useMemo(() => {
     if (!selectedKPI) return [];
     const b = BENCHMARKS[selectedKPI];
-    const baseVal = data[selectedKPI] || 0;
-    const variance = baseVal * 0.15;
-    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    return months.map((m, i) => {
-      const trend = b?.lower ? -i * (variance / 14) : i * (variance / 14);
-      const noise = Math.sin(i * 2.1) * variance * 0.3;
-      return { month: m, value: Math.round((baseVal + trend + noise) * 100) / 100 };
-    });
+    return generateTrend(data[selectedKPI], data[selectedKPI] * 0.15, b?.lower);
   }, [selectedKPI, data]);
+
+  const cashFlowData = PERIODS.map((m, i) => ({
+    month: m,
+    billed: Math.round(data.revenue / 12 + Math.sin(i * 0.7) * data.revenue * 0.02),
+    collected: Math.round(data.revenue / 12 * 0.92 + Math.cos(i * 0.5) * data.revenue * 0.018),
+    netAR: Math.round(data.arBalance + Math.sin(i * 0.4) * data.arBalance * 0.06),
+  }));
+
+  const regionCompare = ENTITIES.filter(e => e !== "Global Consolidated").map(e => {
+    const d = generateEntityData(e);
+    return { region: e, dso: d.dso, cei: d.cei, fpm: d.fpm, tr: d.tr, bd: d.bd };
+  });
 
   const styles = {
     page: { background: C.bg, minHeight: "100vh", fontFamily: "'Segoe UI', 'Helvetica Neue', sans-serif", color: C.t1 },
@@ -381,18 +262,17 @@ export default function ARDashboard() {
     td: { padding: "10px 12px", borderBottom: `1px solid ${C.border}`, color: C.t2 },
   };
 
-  const iconMap = { dso: "📅", cei: "📊", bd: "⚠️", fpm: "🎯", tr: "👆", dct: "⚡", arRev: "💰", ei: "📄" };
-
   return (
     <div style={styles.page}>
       <div style={styles.container}>
+        {/* HEADER */}
         <div style={styles.header}>
           <div>
             <div style={styles.title}>AR Performance Command Center</div>
-            <div style={styles.subtitle}>Order-to-Cash KPI Dashboard · APQC/Hackett Benchmarked · FY2026 · Live Seed Data</div>
+            <div style={styles.subtitle}>Order-to-Cash KPI Dashboard · APQC/Hackett Benchmarked · FY2026</div>
           </div>
           <div style={styles.controls}>
-            <select style={styles.select} value={entity} onChange={e => { setEntity(e.target.value); setSelectedKPI(null); setSelectedRegion(null); }}>
+            <select style={styles.select} value={entity} onChange={e => { setEntity(e.target.value); setSelectedKPI(null); }}>
               {ENTITIES.map(e => <option key={e} value={e}>{e}</option>)}
             </select>
             <button style={styles.viewBtn(view === "executive")} onClick={() => setView("executive")}>Executive</button>
@@ -400,6 +280,7 @@ export default function ARDashboard() {
           </div>
         </div>
 
+        {/* KPI CARDS */}
         <div style={styles.grid}>
           {kpiCards.map(k => {
             const color = getPerformanceColor(k.id, k.value);
@@ -409,7 +290,7 @@ export default function ARDashboard() {
               <div key={k.id} style={styles.kpiCard(isSelected, color)} onClick={() => setSelectedKPI(isSelected ? null : k.id)}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                   <span style={{ fontSize: 11, color: C.t3, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{k.label}</span>
-                  <span style={{ fontSize: 14 }}>{iconMap[k.id]}</span>
+                  <span style={{ fontSize: 14 }}>{k.icon}</span>
                 </div>
                 <div style={{ fontSize: 28, fontWeight: 700, color: color, letterSpacing: "-0.02em" }}>
                   {k.id === "arRev" ? "$" : ""}{k.value}{k.id !== "arRev" ? (k.unit === "days" ? "" : "%") : ""}
@@ -423,6 +304,7 @@ export default function ARDashboard() {
           })}
         </div>
 
+        {/* KPI TREND DETAIL (if selected) */}
         {selectedKPI && (
           <div style={styles.chartBox}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -475,8 +357,10 @@ export default function ARDashboard() {
           </div>
         )}
 
+        {/* ═══════ EXECUTIVE VIEW ═══════ */}
         {view === "executive" && (
           <>
+            {/* Row 1: Cash Flow + AR Aging */}
             <div style={styles.row}>
               <div style={styles.chartBox}>
                 <div style={styles.chartTitle}>Cash Conversion Cycle</div>
@@ -524,18 +408,10 @@ export default function ARDashboard() {
               </div>
             </div>
 
+            {/* Row 2: Region Comparison */}
             <div style={styles.chartBox}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <div style={styles.chartTitle}>Regional Performance Comparison</div>
-                  <div style={styles.chartSub}>DSO · CEI · Auto-Match Rate · Touch Rate across entities · Click a bar to filter overdue list</div>
-                </div>
-                {selectedRegion && (
-                  <button onClick={() => setSelectedRegion(null)} style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 6, color: C.t3, padding: "4px 12px", cursor: "pointer", fontSize: 11 }}>
-                    Clear filter: {selectedRegion}
-                  </button>
-                )}
-              </div>
+              <div style={styles.chartTitle}>Regional Performance Comparison</div>
+              <div style={styles.chartSub}>DSO · CEI · Auto-Match Rate · Touch Rate across entities</div>
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={regionCompare} barGap={4}>
                   <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
@@ -543,7 +419,7 @@ export default function ARDashboard() {
                   <YAxis tick={{ fill: C.t3, fontSize: 11 }} axisLine={{ stroke: C.border }} />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend wrapperStyle={{ fontSize: 11, color: C.t3 }} />
-                  <Bar dataKey="dso" fill={C.blue} name="DSO (days)" radius={[3, 3, 0, 0]} onClick={(_, i) => setSelectedRegion(selectedRegion === regionCompare[i]?.region ? null : regionCompare[i]?.region)} />
+                  <Bar dataKey="dso" fill={C.blue} name="DSO (days)" radius={[3, 3, 0, 0]} />
                   <Bar dataKey="cei" fill={C.green} name="CEI (%)" radius={[3, 3, 0, 0]} />
                   <Bar dataKey="fpm" fill={C.gold} name="FPM (%)" radius={[3, 3, 0, 0]} />
                   <Bar dataKey="tr" fill={C.orange} name="Touch Rate (%)" radius={[3, 3, 0, 0]} />
@@ -551,21 +427,14 @@ export default function ARDashboard() {
               </ResponsiveContainer>
             </div>
 
+            {/* Row 3: Top Delinquent */}
             <div style={styles.chartBox}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <div style={styles.chartTitle}>Top Overdue Accounts — Action Required</div>
-                  <div style={styles.chartSub}>
-                    Ranked by overdue balance{selectedRegion ? ` · Filtered: ${selectedRegion}` : " · Click a region bar above to filter"}
-                    {selectedRegion && ` · ${topDelinquent.length} accounts`}
-                  </div>
-                </div>
-              </div>
+              <div style={styles.chartTitle}>Top Overdue Accounts — Action Required</div>
+              <div style={styles.chartSub}>Ranked by overdue balance · Click entity selector to filter by region</div>
               <table style={styles.table}>
                 <thead>
                   <tr>
                     <th style={styles.th}>Customer</th>
-                    <th style={styles.th}>Region</th>
                     <th style={styles.th}>Total AR ($M)</th>
                     <th style={styles.th}>Overdue ($M)</th>
                     <th style={styles.th}>Customer DSO</th>
@@ -574,12 +443,9 @@ export default function ARDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {topDelinquent.length === 0 ? (
-                    <tr><td colSpan={7} style={{ ...styles.td, textAlign: "center", color: C.t3, padding: 20 }}>No overdue accounts{selectedRegion ? ` in ${selectedRegion}` : ""}</td></tr>
-                  ) : topDelinquent.map(c => (
-                    <tr key={c.customer} style={{ transition: "background 0.2s", cursor: "pointer" }} onMouseEnter={e => e.currentTarget.style.background = C.s2} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  {TOP_DELINQUENT.map(c => (
+                    <tr key={c.customer} style={{ transition: "background 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = C.s2} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                       <td style={{ ...styles.td, color: C.t1, fontWeight: 600 }}>{c.customer}</td>
-                      <td style={styles.td}>{c.region}</td>
                       <td style={styles.td}>${c.balance}M</td>
                       <td style={{ ...styles.td, color: C.red, fontWeight: 600 }}>${c.overdue}M</td>
                       <td style={{ ...styles.td, color: c.dso > 50 ? C.red : c.dso > 40 ? C.gold : C.green }}>{c.dso} days</td>
@@ -592,9 +458,9 @@ export default function ARDashboard() {
                       <td style={styles.td}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <div style={{ flex: 1, height: 6, background: C.s3, borderRadius: 3, overflow: "hidden" }}>
-                            <div style={{ width: `${Math.min(100, c.overdue / (c.balance || 1) * 100)}%`, height: "100%", background: c.overdue / (c.balance || 1) > 0.6 ? C.red : C.gold, borderRadius: 3 }} />
+                            <div style={{ width: `${(c.overdue / c.balance * 100)}%`, height: "100%", background: c.overdue / c.balance > 0.6 ? C.red : C.gold, borderRadius: 3 }} />
                           </div>
-                          <span style={{ fontSize: 11, color: C.t3, minWidth: 32 }}>{Math.round(c.overdue / (c.balance || 1) * 100)}%</span>
+                          <span style={{ fontSize: 11, color: C.t3, minWidth: 32 }}>{Math.round(c.overdue / c.balance * 100)}%</span>
                         </div>
                       </td>
                     </tr>
@@ -605,24 +471,26 @@ export default function ARDashboard() {
           </>
         )}
 
+        {/* ═══════ OPERATIONAL VIEW ═══════ */}
         {view === "operational" && (
           <>
+            {/* Row 1: Collections Activity + Dispute Pareto */}
             <div style={styles.row}>
               <div style={styles.chartBox}>
                 <div style={styles.chartTitle}>Collections Activity Tracker</div>
-                <div style={styles.chartSub}>Calls · Emails · Promises-to-Pay · Collected</div>
+                <div style={styles.chartSub}>Calls · Emails · Promises-to-Pay · Collected ($M)</div>
                 <ResponsiveContainer width="100%" height={260}>
-                  <ComposedChart data={collectionActivityData}>
+                  <ComposedChart data={COLLECTION_ACTIVITY}>
                     <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
                     <XAxis dataKey="month" tick={{ fill: C.t3, fontSize: 11 }} axisLine={{ stroke: C.border }} />
-                    <YAxis yAxisId="left" tick={{ fill: C.t3, fontSize: 11 }} axisLine={{ stroke: C.border }} label={{ value: "Activities", angle: -90, position: "insideLeft", fill: C.t3, fontSize: 10 }} />
-                    <YAxis yAxisId="right" orientation="right" tick={{ fill: C.t3, fontSize: 11 }} axisLine={{ stroke: C.border }} label={{ value: "$M", angle: 90, position: "insideRight", fill: C.t3, fontSize: 10 }} />
+                    <YAxis yAxisId="left" tick={{ fill: C.t3, fontSize: 11 }} axisLine={{ stroke: C.border }} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fill: C.t3, fontSize: 11 }} axisLine={{ stroke: C.border }} />
                     <Tooltip content={<CustomTooltip />} />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
                     <Bar yAxisId="left" dataKey="calls" fill={C.blue} name="Calls" opacity={0.6} radius={[2,2,0,0]} />
                     <Bar yAxisId="left" dataKey="emails" fill={C.purple} name="Emails" opacity={0.6} radius={[2,2,0,0]} />
                     <Line yAxisId="left" type="monotone" dataKey="promises" stroke={C.gold} strokeWidth={2} name="Promises" dot={false} />
-                    <Line yAxisId="right" type="monotone" dataKey="collected" stroke={C.green} strokeWidth={2} name="Collected" dot={{ r: 3, fill: C.surface, stroke: C.green }} />
+                    <Line yAxisId="right" type="monotone" dataKey="collected" stroke={C.green} strokeWidth={2} name="Collected ($M)" dot={{ r: 3, fill: C.surface, stroke: C.green }} />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -631,7 +499,7 @@ export default function ARDashboard() {
                 <div style={styles.chartTitle}>Dispute Pareto Analysis</div>
                 <div style={styles.chartSub}>Top reason codes by volume · Avg resolution days</div>
                 <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={disputeData} layout="vertical" margin={{ left: 20 }}>
+                  <BarChart data={DISPUTE_DATA} layout="vertical" margin={{ left: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
                     <XAxis type="number" tick={{ fill: C.t3, fontSize: 11 }} axisLine={{ stroke: C.border }} />
                     <YAxis type="category" dataKey="reason" tick={{ fill: C.t2, fontSize: 11 }} width={110} axisLine={{ stroke: C.border }} />
@@ -642,6 +510,7 @@ export default function ARDashboard() {
               </div>
             </div>
 
+            {/* Row 2: Dispute Detail Table */}
             <div style={styles.chartBox}>
               <div style={styles.chartTitle}>Dispute Resolution Detail</div>
               <div style={styles.chartSub}>By reason code · Avg days to resolve · Total value at risk</div>
@@ -657,9 +526,9 @@ export default function ARDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {disputeData.map(d => {
-                    const totalCount = disputeData.reduce((s, x) => s + x.count, 0);
-                    const pct = Math.round(d.count / (totalCount || 1) * 100);
+                  {DISPUTE_DATA.map(d => {
+                    const totalCount = DISPUTE_DATA.reduce((s, x) => s + x.count, 0);
+                    const pct = Math.round(d.count / totalCount * 100);
                     return (
                       <tr key={d.reason} onMouseEnter={e => e.currentTarget.style.background = C.s2} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                         <td style={{ ...styles.td, color: C.t1, fontWeight: 600 }}>{d.reason}</td>
@@ -687,6 +556,7 @@ export default function ARDashboard() {
               </table>
             </div>
 
+            {/* Row 3: Automation Metrics + Cash App Detail */}
             <div style={styles.row}>
               <div style={styles.chartBox}>
                 <div style={styles.chartTitle}>Automation & Efficiency Metrics</div>
@@ -721,7 +591,7 @@ export default function ARDashboard() {
                 <div style={styles.chartSub}>Match categories · Exception breakdown</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
                   {[
-                    { label: "Auto-Matched", value: `${data.fpm}%`, sub: `${Math.round(data.fpm * 0.12)} first-pass`, color: C.green },
+                    { label: "Auto-Matched", value: `${data.fpm}%`, sub: "First-pass", color: C.green },
                     { label: "Manual Match", value: `${Math.round((100 - data.fpm) * 0.6)}%`, sub: "Analyst resolved", color: C.gold },
                     { label: "Unapplied Cash", value: `${Math.round((100 - data.fpm) * 0.25)}%`, sub: ">5 day aged", color: C.orange },
                     { label: "Exceptions", value: `${Math.round((100 - data.fpm) * 0.15)}%`, sub: "Escalated", color: C.red },
@@ -734,15 +604,16 @@ export default function ARDashboard() {
                   ))}
                 </div>
                 <div style={{ marginTop: 16, padding: 12, background: `${C.blue}08`, borderRadius: 8, border: `1px solid ${C.blue}20` }}>
-                  <div style={{ fontSize: 11, color: C.blue, fontWeight: 600, marginBottom: 4 }}>AUTOMATION OPPORTUNITY</div>
+                  <div style={{ fontSize: 11, color: C.blue, fontWeight: 600, marginBottom: 4 }}>💡 AUTOMATION OPPORTUNITY</div>
                   <div style={{ fontSize: 12, color: C.t2 }}>
-                    Moving auto-match from {data.fpm}% to 85% would eliminate ~{Math.max(0, Math.round((85 - data.fpm) / 100 * 1200))} manual touches/month,
-                    saving ~{Math.max(0, Math.round((85 - data.fpm) * 0.8))} analyst hours and reducing unapplied cash aging by an estimated 40%.
+                    Moving auto-match from {data.fpm}% to 85% would eliminate ~{Math.round((85 - data.fpm) / 100 * 1200)} manual touches/month, 
+                    saving ~{Math.round((85 - data.fpm) * 0.8)} analyst hours and reducing unapplied cash aging by an estimated 40%.
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* Process Health Heatmap */}
             <div style={styles.chartBox}>
               <div style={styles.chartTitle}>Process Health Heatmap — By Sub-Process × Region</div>
               <div style={styles.chartSub}>Green = Top Quartile · Gold = Median · Red = Below Median · Based on composite KPI scoring</div>
@@ -757,11 +628,18 @@ export default function ARDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {processHealth.map(row => (
+                    {[
+                      { process: "Credit Management", scores: { "North America": 88, "EMEA": 72, "APAC": 65, "LATAM": 55 } },
+                      { process: "Order Management", scores: { "North America": 85, "EMEA": 78, "APAC": 70, "LATAM": 62 } },
+                      { process: "Billing & Invoicing", scores: { "North America": 82, "EMEA": 75, "APAC": 60, "LATAM": 48 } },
+                      { process: "Cash Application", scores: { "North America": 90, "EMEA": 70, "APAC": 62, "LATAM": 52 } },
+                      { process: "Collections", scores: { "North America": 86, "EMEA": 74, "APAC": 68, "LATAM": 58 } },
+                      { process: "Reporting & Governance", scores: { "North America": 80, "EMEA": 76, "APAC": 64, "LATAM": 50 } },
+                    ].map(row => (
                       <tr key={row.process}>
                         <td style={{ ...styles.td, color: C.t1, fontWeight: 600 }}>{row.process}</td>
                         {ENTITIES.filter(e => e !== "Global Consolidated").map(e => {
-                          const s = row.scores[e] || 0;
+                          const s = row.scores[e];
                           const color = s >= 85 ? C.green : s >= 70 ? C.gold : C.red;
                           const bg = s >= 85 ? C.greenDim : s >= 70 ? C.goldDim : C.redDim;
                           return (
@@ -779,15 +657,18 @@ export default function ARDashboard() {
           </>
         )}
 
+        {/* Footer */}
         <div style={{ marginTop: 36, paddingTop: 20, borderTop: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <div style={{ fontSize: 11, color: C.t3 }}>
-            AR Performance Command Center · v2.0 Live · APQC PCF v8.0 Aligned · Hackett World-Class Benchmarks · Seed Data
+            AR Performance Command Center · v1.1 · APQC PCF v8.0 Aligned · Hackett World-Class Benchmarks · 2026
           </div>
           <div style={{ display: "flex", gap: 16 }}>
-            <span style={{ fontSize: 11, color: C.t3 }}>Data: Seed ({invoices.length} invoices, {disputes.length} disputes)</span>
-            <span style={{ fontSize: 11, color: C.t3 }}>Refresh: Real-time</span>
+            <span style={{ fontSize: 11, color: C.t3 }}>Data: Sample ($2B Enterprise)</span>
+            <span style={{ fontSize: 11, color: C.t3 }}>Refresh: Real-time capable</span>
+            <span style={{ fontSize: 11, color: C.t3 }}>Export: Power BI / Excel / PDF</span>
           </div>
         </div>
+
       </div>
     </div>
   );
