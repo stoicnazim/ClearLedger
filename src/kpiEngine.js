@@ -1,3 +1,5 @@
+import { evaluateRules } from './ruleEngine'
+
 /* ═══════════════════════════════════════════════════════════════════════
    ClearLedger — KPI Calculation Engine
    ───────────────────────────────────────────────────────────────────────
@@ -382,6 +384,141 @@ export const KPI_ENGINE = {
       return { value: r1((kyc / active.length) * 100), computable: true }
     },
   },
+  K054: { // Dispute Prevention Score
+    formula: 'Weighted score across 8 onboarding quality factors (100-point scale)',
+    unit: 'points',
+    compute: (db) => {
+      const cust = db.customers || []
+      if (!cust.length) return NA
+      // Proxy from 4 available factors with 25 pts each = 100 scale
+      const mdmRatio = cust.reduce((s, c) => s + (c.mdmFieldsPassing || 0), 0) / Math.max(1, cust.reduce((s, c) => s + (c.mdmFieldsTotal || 24), 0))
+      const kycRatio = cust.filter((c) => c.kycComplete).length / cust.length
+      const dupePenalty = Math.max(0, 1 - cust.filter((c) => c.isDuplicate).length / cust.length)
+      const onboardFast = cust.filter((c) => c.onboardCycleDays && c.onboardCycleDays <= 7).length / cust.length
+      const score = r1((mdmRatio * 25 + kycRatio * 25 + dupePenalty * 25 + onboardFast * 25))
+      return { value: score, computable: true, proxy: '4-factor proxy (MDM quality, KYC, duplicates, cycle time)' }
+    },
+  },
+  /* ============ TECHNOLOGY & AUTOMATION ============ */
+  K060: { // Straight-Through Processing Rate
+    formula: '(Transactions requiring zero manual touch / Total transactions) × 100',
+    unit: '%',
+    compute: (db) => {
+      const ca = db.cashApplications || []
+      const orders = db.salesOrders || []
+      const autoMatched = ca.filter((c) => c.matchStatus === 'auto_matched').length
+      const autoApproved = orders.filter((o) => o.creditCheckResult === 'pass').length
+      const total = ca.length + orders.length
+      if (total === 0) return NA
+      return { value: r1(((autoMatched + autoApproved) / total) * 100), computable: true, proxy: 'Auto-match rate + auto-approval rate combined' }
+    },
+  },
+  K061: { // System Integration Completeness
+    formula: '(Integrated data flows / Required data flows per architecture spec) × 100',
+    unit: '%',
+    compute: () => ({ ...NA, proxy: 'Requires integration architecture spec — not computable from seed data' }),
+  },
+  K062: { // RFP Score Variance
+    formula: 'StdDev of evaluator scores / Mean score × 100',
+    unit: '%',
+    compute: () => ({ ...NA, proxy: 'Requires vendor evaluation scores — not in seed data' }),
+  },
+  K063: { // Total Cost of Ownership (TCO) Variance
+    formula: '(Actual TCO − Projected TCO) / Projected TCO × 100',
+    unit: '%',
+    compute: () => ({ ...NA, proxy: 'Requires TCO projections and actuals — not in seed data' }),
+  },
+  /* ============ BPO & MANAGED SERVICES ============ */
+  K070: { // BPO Cost per Transaction
+    formula: 'Total BPO cost / Transactions processed by BPO',
+    unit: 'currency',
+    compute: (db) => {
+      const bpoCustomers = (db.customers || []).filter((c) => c.deliveryModel === 'BPO')
+      if (!bpoCustomers.length) return { ...NA, proxy: 'No BPO delivery model customers in seed' }
+      const bpoIds = new Set(bpoCustomers.map((c) => c.id))
+      const bpoInvs = (db.invoices || []).filter((i) => bpoIds.has(i.customerId))
+      if (!bpoInvs.length) return { ...NA, proxy: 'No invoices for BPO customers' }
+      const totalCost = bpoInvs.reduce((s, i) => s + (i.costPerInvoice || 0), 0)
+      return { value: r2(totalCost / bpoInvs.length), computable: true, proxy: 'Avg cost per invoice for BPO-delivered customers' }
+    },
+  },
+  K071: { // BPO SLA Compliance Rate
+    formula: '(SLA targets met / Total SLA targets measured) × 100',
+    unit: '%',
+    compute: () => ({ ...NA, proxy: 'Requires SLA metrics data — not in seed' }),
+  },
+  K072: { // Transition Risk Score
+    formula: 'Weighted risk register score (8 risk items × likelihood × impact)',
+    unit: 'score',
+    compute: () => ({ ...NA, proxy: 'Requires risk register data — not in seed' }),
+  },
+  K073: { // Retained Org Efficiency
+    formula: 'Processes governed / Retained FTEs',
+    unit: 'ratio',
+    compute: () => ({ ...NA, proxy: 'Requires retained org FTE data — not in seed' }),
+  },
+  /* ============ CROSS-FUNCTIONAL ============ */
+  K080: { // OtC Maturity Score
+    formula: 'Weighted average across maturity dimensions (1-5 scale)',
+    unit: 'level',
+    compute: (db) => {
+      const cust = db.customers || []
+      if (!cust.length) return NA
+      // Proxy maturity from 4 dimensions (each 1-5):
+      // 1. MDM quality → mdmFieldsPassing/mdmFieldsTotal mapped to 1-5
+      // 2. KYC completeness → kycComplete ratio
+      // 3. Onboarding speed → onboardCycleDays inverse
+      // 4. Credit health → credit profiles risk score inverse
+      const profiles = db.creditProfiles || []
+      const mdmAvg = cust.reduce((s, c) => s + (c.mdmFieldsPassing || 0) / Math.max(1, c.mdmFieldsTotal || 24), 0) / cust.length
+      const kycRatio = cust.filter((c) => c.kycComplete).length / cust.length
+      const onboardAvg = cust.reduce((s, c) => s + Math.min(1, 14 / Math.max(1, c.onboardCycleDays || 14)), 0) / cust.length
+      const riskAvg = profiles.length ? profiles.reduce((s, p) => s + Math.max(0, 1 - (p.riskScore || 0) / 100), 0) / profiles.length : 0
+      const maturity = r1((mdmAvg + kycRatio + onboardAvg + riskAvg) / 4 * 5)
+      return { value: Math.min(5, Math.max(1, maturity)), computable: true, proxy: '4-dimension proxy (MDM, KYC, onboarding, credit risk)' }
+    },
+  },
+  K081: { // OtC FTE per $B Revenue
+    formula: 'Total OtC FTEs / (Annual revenue / 1B)',
+    unit: 'FTEs',
+    compute: (db) => {
+      const o = db.orgFinancials
+      const a = aggregates(db)
+      const revenue = (o && o.annualRevenue) || a.totalBilled * 4
+      if (!revenue) return { ...NA, proxy: 'Requires total OtC FTE count — not in seed' }
+      return { ...NA, proxy: 'FTE headcount data not available in seed; use orgFinancials.fteCollectors as partial proxy' }
+    },
+  },
+  K082: { // Total OtC Cost as % of Revenue
+    formula: '(Total OtC operating costs / Net revenue) × 100',
+    unit: '%',
+    compute: (db) => {
+      const inv = db.invoices || []
+      const a = aggregates(db)
+      if (!inv.length || a.totalBilled === 0) return NA
+      const totalCost = inv.reduce((s, i) => s + (i.costPerInvoice || 0), 0)
+      return { value: r2((totalCost / a.totalBilled) * 100), computable: true, proxy: 'Sum(costPerInvoice) / totalBilled — excludes system/overhead costs' }
+    },
+  },
+  K083: { // Customer Satisfaction (OtC-related)
+    formula: 'Survey score (1-5) across billing, collections, dispute, and portal experience',
+    unit: 'score',
+    compute: () => ({ ...NA, proxy: 'Requires survey data — not in seed' }),
+  },
+  K084: { // Process Automation Coverage
+    formula: '(Automated process steps / Total process steps) × 100',
+    unit: '%',
+    compute: (db) => {
+      // Proxy: combine auto-match rate and auto-approval rate as proxy for automation breadth
+      const ca = db.cashApplications || []
+      const orders = db.salesOrders || []
+      const matchAuto = ca.length ? ca.filter((c) => c.matchStatus === 'auto_matched').length / ca.length : 0
+      const creditAuto = orders.length ? orders.filter((o) => o.creditCheckResult === 'pass').length / orders.length : 0
+      const collAuto = (db.collectionActivities || []).length ? 0.4 : 0 // placeholder — no automation field on activities
+      const coverage = r1(((matchAuto + creditAuto + collAuto) / 3) * 100)
+      return { value: coverage, computable: true, proxy: '3-factor proxy (cash app auto-match, credit auto-approval, collections automation estimate)' }
+    },
+  },
 }
 
 /* helper: auto-match rate from cash applications (shared by K006, K022) */
@@ -446,6 +583,20 @@ export const KPI_NAME_TO_ID = {
   'root cause concentration': 'K036',
   'cash conversion cycle': 'K040', 'ccc': 'K040',
   'dso by customer segment': 'K042', 'dso by segment': 'K042',
+  'dispute prevention': 'K054', 'prevention score': 'K054',
+  'straight-through processing': 'K060', 'stp rate': 'K060', 'stp': 'K060',
+  'integration completeness': 'K061',
+  'rfp score variance': 'K062',
+  'tco variance': 'K063', 'total cost of ownership': 'K063',
+  'bpo cost per transaction': 'K070',
+  'bpo sla compliance': 'K071', 'sla compliance': 'K071',
+  'transition risk': 'K072',
+  'retained org efficiency': 'K073',
+  'otc maturity': 'K080', 'maturity score': 'K080',
+  'otc fte per b revenue': 'K081', 'fte per b': 'K081',
+  'total otc cost': 'K082', 'otc cost %': 'K082',
+  'customer satisfaction': 'K083',
+  'automation coverage': 'K084', 'process automation': 'K084',
 }
 
 export function lookupKPIByName(name, db) {
@@ -453,4 +604,73 @@ export function lookupKPIByName(name, db) {
   const key = Object.keys(KPI_NAME_TO_ID).find((k) => name.toLowerCase().includes(k))
   if (!key) return null
   return computeKPI(KPI_NAME_TO_ID[key], db)
+}
+
+/* ── KPI Threshold Breach Evaluation (Rule Engine integration) ── */
+
+/**
+ * KPI threshold definitions mapping KPI IDs to breach conditions.
+ * Each entry defines the threshold and which SOP context keys to set when breached.
+ */
+export const KPI_THRESHOLDS = {
+  K001: { label: 'DSO', warnAbove: 42, criticalAbove: 50, contextKeys: { dsoElevated: true, cccWorsening: true } },
+  K002: { label: 'Invoice Accuracy', warnBelow: 90, criticalBelow: 80, contextKeys: { skuFound: false } },
+  K004: { label: 'E-Invoice Adoption', warnBelow: 50, criticalBelow: 30, contextKeys: { localMandateSchemaValid: false } },
+  K010: { label: 'Bad Debt %', warnAbove: 0.5, criticalAbove: 1.0, contextKeys: { autoDowngradeTrigger: true } },
+  K012: { label: 'Credit Limit Utilization', warnAbove: 70, criticalAbove: 85, contextKeys: { autoDowngradeTrigger: true } },
+  K020: { label: 'CEI', warnBelow: 85, criticalBelow: 75, contextKeys: { escalationDue: true } },
+  K021: { label: 'AR > 90 Days', warnAbove: 15, criticalAbove: 25, contextKeys: { dpdOver45: true, noPtp: true } },
+  K022: { label: 'Auto-Match Rate', warnBelow: 70, criticalBelow: 55, contextKeys: { partialMatch: true } },
+  K024: { label: 'PTP Kept Rate', warnBelow: 70, criticalBelow: 55, contextKeys: { noPtp: true } },
+  K040: { label: 'CCC', warnAbove: 55, criticalAbove: 65, contextKeys: { cccWorsening: true, dsoElevated: true } },
+  K041: { label: 'Cash Forecast Accuracy', warnBelow: 85, criticalBelow: 75, contextKeys: { forecastAccuracyLow: true } },
+  K054: { label: 'Dispute Prevention Score', warnBelow: 60, criticalBelow: 40, contextKeys: { disputePreventionLow: true } },
+  K060: { label: 'STP Rate', warnBelow: 50, criticalBelow: 30, contextKeys: { stpLow: true } },
+  K070: { label: 'BPO Cost per Transaction', warnAbove: 10, criticalAbove: 15, contextKeys: { bpoCostElevated: true } },
+  K080: { label: 'OtC Maturity', warnBelow: 2.5, criticalBelow: 1.5, contextKeys: { maturityLow: true } },
+  K082: { label: 'OtC Cost % of Revenue', warnAbove: 0.8, criticalAbove: 1.2, contextKeys: { costElevated: true } },
+  K084: { label: 'Process Automation', warnBelow: 40, criticalBelow: 25, contextKeys: { automationLow: true } },
+}
+
+/**
+ * evaluateKPIThresholds(kpiResults, sopRegistry)
+ *
+ * @param {Object} kpiResults - output of computeAllKPIs(db) e.g. { K001: { value: 38.5, computable: true }, ... }
+ * @param {Array} sopRegistry - full SOP_REGISTRY array from seedDatabase
+ * @returns {Array} matched rules sorted by priority, enriched with breach info
+ */
+export function evaluateKPIThresholds(kpiResults, sopRegistry) {
+  const context = {}
+  const breaches = []
+
+  for (const [kpiId, threshold] of Object.entries(KPI_THRESHOLDS)) {
+    const result = kpiResults[kpiId]
+    if (!result || !result.computable || result.value == null) continue
+
+    const val = typeof result.value === 'number' ? result.value : null
+    if (val === null) continue
+
+    let breached = false
+    let severity = 'ok'
+    if (threshold.warnAbove != null && val > threshold.warnAbove) {
+      breached = true
+      severity = val > threshold.criticalAbove ? 'critical' : 'warning'
+    } else if (threshold.warnBelow != null && val < threshold.warnBelow) {
+      breached = true
+      severity = val < threshold.criticalBelow ? 'critical' : 'warning'
+    }
+
+    if (breached) {
+      Object.assign(context, threshold.contextKeys)
+      breaches.push({ kpiId, label: threshold.label, value: val, severity, threshold })
+    }
+  }
+
+  const matchedRules = evaluateRules(sopRegistry, ['treasury', 'risk', 'collections', 'credit', 'compliance', 'governance'], context)
+
+  return {
+    contextKeysUsed: Object.keys(context),
+    breaches,
+    matchedRules,
+  }
 }

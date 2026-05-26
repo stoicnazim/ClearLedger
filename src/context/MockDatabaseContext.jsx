@@ -144,7 +144,7 @@ export function MockDatabaseProvider({ children }) {
   }
 
   return (
-    <MockDatabaseContext.Provider value={{
+      <MockDatabaseContext.Provider value={{
       invoices,
       disputes,
       customers,
@@ -162,7 +162,8 @@ export function MockDatabaseProvider({ children }) {
       addDecisionLog,
       decisionLog,
       setDisputes,
-      setInvoices
+      setInvoices,
+      engineDb: dbSeed
     }}>
       {children}
     </MockDatabaseContext.Provider>
