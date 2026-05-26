@@ -439,7 +439,7 @@ export default function ClearLedgerWebsite({ onStartDiagnostic, onShowLegal }) {
                 </div>
                 <div style={{ display: "flex", gap: "32px", marginTop: "36px", flexWrap: "wrap" }}>
                   {[
-                    { val: "APQC PCF v7.4", sub: "Framework aligned" },
+                    { val: "APQC PCF v8.0", sub: "Framework aligned" },
                     { val: "20+ Modules", sub: "Analytical toolkit" },
                     { val: "10–1,000", sub: "Employee sweet spot" },
                   ].map((s, i) => (
@@ -903,7 +903,7 @@ export default function ClearLedgerWebsite({ onStartDiagnostic, onShowLegal }) {
             {/* Standards & Legal */}
             <div>
               <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.textMid, fontWeight: 500, marginBottom: "16px", textTransform: "uppercase", letterSpacing: "1px" }}>Standards</div>
-              {["APQC PCF v7.4", "Hackett Benchmarks", "IFRS 15 / ASC 606", "SOX 404 Controls", "Peppol / e-Invoicing"].map(l => (
+              {["APQC PCF v8.0", "Hackett Benchmarks", "IFRS 15 / ASC 606", "SOX 404 Controls", "Peppol / e-Invoicing"].map(l => (
                 <span key={l} style={{ display: "block", fontFamily: C.mono, fontSize: "11px", color: C.textDim, padding: "4px 0" }}>{l}</span>
               ))}
             </div>
