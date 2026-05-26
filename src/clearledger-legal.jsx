@@ -247,8 +247,8 @@ const CookieContent = () => (
 );
 
 // ─── Main Component ──────────────────────────────────────────
-export default function LegalPages() {
-  const [tab, setTab] = useState("privacy");
+export default function LegalPages({ onClose, initialTab }) {
+  const [tab, setTab] = useState(initialTab || "privacy");
   const topRef = useRef(null);
 
   const tabs = [
@@ -279,7 +279,7 @@ export default function LegalPages() {
           <LogoMark size={24} />
           <span style={{ fontFamily: C.serif, fontSize: "16px", color: C.text }}>ClearLedger</span>
         </a>
-        <a href="/" style={{ fontFamily: C.sans, fontSize: "13px", color: C.textDim, textDecoration: "none" }}>← Back to Home</a>
+        <button onClick={() => onClose?.()} style={{ fontFamily: C.sans, fontSize: "13px", color: C.textDim, textDecoration: "none", cursor: "pointer", background: "none", border: "none" }}>← Back to Home</button>
       </header>
 
       <div style={{ maxWidth: "780px", margin: "0 auto", padding: "48px 24px 80px" }}>

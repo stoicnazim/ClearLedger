@@ -436,7 +436,7 @@ const MaturityBar = ({ score, target, label, color, animate = true }) => {
 };
 
 // ─── Main App ────────────────────────────────────────────────────
-export default function ClearLedgerDiagnostic() {
+export default function ClearLedgerDiagnostic({ onClose }) {
   const [screen, setScreen] = useState("intro"); // intro | profile | assessment | results
   const [tier, setTier] = useState(null);
   const [company, setCompany] = useState({ name: "", revenue: "", industry: "", erp: "" });
@@ -540,6 +540,16 @@ export default function ClearLedgerDiagnostic() {
             </div>
             <span style={{ fontFamily: C.mono, fontSize: "11px", color: C.textDim }}>{answeredCount}/{totalQuestions}</span>
           </div>
+        )}
+        {onClose && (
+          <button onClick={onClose} style={{
+            fontFamily: C.sans, fontSize: "12px", color: C.textDim, cursor: "pointer",
+            background: "none", border: "none", padding: "6px 12px",
+            borderRadius: C.radiusSm, transition: "color 0.2s",
+          }}
+            onMouseEnter={e => e.target.style.color = C.text}
+            onMouseLeave={e => e.target.style.color = C.textDim}
+          >← Back to Website</button>
         )}
       </header>
 

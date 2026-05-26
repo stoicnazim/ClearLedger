@@ -198,7 +198,7 @@ const DashboardPreview = () => {
 };
 
 // ─── Main App ────────────────────────────────────────────────────
-export default function ClearLedgerWebsite() {
+export default function ClearLedgerWebsite({ onStartDiagnostic, onShowLegal }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeService, setActiveService] = useState(null);
@@ -361,7 +361,7 @@ export default function ClearLedgerWebsite() {
                 onMouseLeave={e => e.target.style.color = C.textMid}
               >{l}</a>
             ))}
-            <a href="#cta" style={{
+            <a href="#cta" onClick={(e) => { e.preventDefault(); onStartDiagnostic?.(); }} style={{
               fontFamily: C.sans, fontSize: "13px", fontWeight: 500, color: "white", textDecoration: "none",
               padding: "8px 20px", borderRadius: C.radiusSm,
               background: `linear-gradient(135deg, ${C.accent}, ${C.accentDark})`,
@@ -389,7 +389,7 @@ export default function ClearLedgerWebsite() {
                 style={{ display: "block", padding: "12px 0", fontFamily: C.sans, fontSize: "15px", color: C.textMid, textDecoration: "none", borderBottom: `1px solid ${C.border}` }}
               >{l}</a>
             ))}
-            <a href="#cta" onClick={() => setMenuOpen(false)} style={{
+            <a href="#cta" onClick={(e) => { e.preventDefault(); setMenuOpen(false); onStartDiagnostic?.(); }} style={{
               display: "block", textAlign: "center", marginTop: "16px", padding: "12px", borderRadius: C.radiusSm,
               background: C.accent, color: "white", fontFamily: C.sans, fontSize: "14px", fontWeight: 500, textDecoration: "none",
             }}>Start Free Diagnostic</a>
@@ -423,7 +423,7 @@ export default function ClearLedgerWebsite() {
                   who refuse to accept "that's just how AR works."
                 </p>
                 <div style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
-                  <a href="#cta" style={{
+                  <a href="#cta" onClick={(e) => { e.preventDefault(); onStartDiagnostic?.(); }} style={{
                     fontFamily: C.sans, fontSize: "14px", fontWeight: 500, color: "white", textDecoration: "none",
                     padding: "14px 28px", borderRadius: C.radiusSm,
                     background: `linear-gradient(135deg, ${C.accent}, ${C.accentDark})`,
@@ -918,12 +918,15 @@ export default function ClearLedgerWebsite() {
               © 2026 ClearLedger. All rights reserved.
             </span>
             <div style={{ display: "flex", gap: "20px" }}>
-              {["Privacy Policy", "Terms of Service", "Cookie Policy"].map(l => (
-                <a key={l} href="#" style={{ fontFamily: C.sans, fontSize: "11px", color: C.textDim, textDecoration: "none", transition: "color 0.2s" }}
-                  onMouseEnter={e => e.target.style.color = C.text}
-                  onMouseLeave={e => e.target.style.color = C.textDim}
-                >{l}</a>
-              ))}
+              {["Privacy Policy", "Terms of Service", "Cookie Policy"].map(l => {
+                const legalTabs = { "Privacy Policy": "privacy", "Terms of Service": "terms", "Cookie Policy": "cookies" };
+                return (
+                  <a key={l} href="#" onClick={(e) => { e.preventDefault(); onShowLegal?.(legalTabs[l]); }} style={{ fontFamily: C.sans, fontSize: "11px", color: C.textDim, textDecoration: "none", transition: "color 0.2s" }}
+                    onMouseEnter={e => e.target.style.color = C.text}
+                    onMouseLeave={e => e.target.style.color = C.textDim}
+                  >{l}</a>
+                );
+              })}
             </div>
           </div>
         </div>
