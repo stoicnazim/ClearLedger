@@ -148,6 +148,7 @@ export function MockDatabaseProvider({ children }) {
       invoices,
       disputes,
       customers,
+      collectionActivities,
       financials,
       logs,
       derived,
