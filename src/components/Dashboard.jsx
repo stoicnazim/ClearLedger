@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { TrendingDown, TrendingUp, Sparkles, Activity, ShieldCheck, CheckCircle2, ChevronRight, Layers, FileText, BookOpen } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts'
 import { useMockDatabase } from '../context/MockDatabaseContext'
@@ -6,6 +6,7 @@ import { useMockDatabase } from '../context/MockDatabaseContext'
 export default function Dashboard({ activeTier, onNavigate, simulationRules }) {
   const { financials, logs, disputes, decisionLog, sopRegistry, gpoRules } = useMockDatabase()
   const effectiveRules = simulationRules || gpoRules
+  const [showGpoPanel, setShowGpoPanel] = useState(false)
 
   // Chart tracking over time scaled relative to live actual metrics
   const chartData = [
@@ -118,65 +119,6 @@ export default function Dashboard({ activeTier, onNavigate, simulationRules }) {
         </div>
       </div>
 
-      {/* GPO Policy Adherence Widget */}
-      <div className="glass-card" style={{
-        border: '1px solid var(--accent-purple)',
-        background: 'var(--accent-purple-glow)'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-          <h3 style={{ fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <ShieldCheck size={16} style={{ color: 'var(--accent-purple)' }} /> GPO Policy Adherence
-          </h3>
-          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-            {decisionLog.filter(d => d.agentId).length} decisions logged
-          </span>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
-          {sopRegistry.map(sop => {
-            const recentLogs = decisionLog.filter(d =>
-              d.decision?.sopRef && sop.rules.some(r => r.id === d.decision.sopRef)
-            )
-            return (
-              <div key={sop.id} style={{
-                background: 'var(--bg-secondary)', borderRadius: '8px', padding: '0.75rem',
-                border: '1px solid var(--border-color)', opacity: recentLogs.length > 0 ? 1 : 0.5
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                  <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)', color: 'var(--accent-purple)', fontWeight: '700' }}>{sop.id} v{sop.version}</span>
-                  <span className={`metric-badge ${recentLogs.length > 0 ? 'badge-success' : 'badge-warning'}`} style={{ fontSize: '0.55rem', padding: '0.05rem 0.3rem' }}>
-                    {recentLogs.length > 0 ? `Applied ${recentLogs.length}x` : 'No activity'}
-                  </span>
-                </div>
-                <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.15rem' }}>{sop.title}</div>
-                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                  Effective: {sop.effectiveDate} · {sop.rules.length} rules
-                </div>
-                <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '0.2rem', display: 'flex', gap: '0.2rem', flexWrap: 'wrap' }}>
-                  {sop.rules.slice(0, 3).map(r => (
-                    <span key={r.id} style={{
-                      fontSize: '0.55rem', padding: '0.05rem 0.25rem', borderRadius: '3px',
-                      background: 'var(--bg-tertiary)', color: 'var(--text-muted)',
-                      border: '1px solid var(--border-color)'
-                    }}>{r.id}</span>
-                  ))}
-                  {sop.rules.length > 3 && <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>+{sop.rules.length - 3}</span>}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-        <div style={{
-          marginTop: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)',
-          borderRadius: '6px', fontSize: '0.7rem', color: 'var(--text-secondary)',
-          display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem'
-        }}>
-          <span>Auto-Approve Threshold: <strong style={{ color: 'var(--accent-purple)' }}>${effectiveRules.autoApproveThreshold.toLocaleString()}</strong></span>
-          <span>Dunning Cadence: <strong style={{ color: 'var(--accent-cyan)' }}>Every {effectiveRules.dunningEscalation} days</strong></span>
-          <span>E-Invoice Validation: <strong style={{ color: effectiveRules.requireEInvoice ? 'var(--success)' : 'var(--text-muted)' }}>{effectiveRules.requireEInvoice ? 'Enforced' : 'Disabled'}</strong></span>
-          <span>Sync Timing: <strong style={{ color: 'var(--accent-purple)' }}>{effectiveRules.syncTiming}</strong></span>
-        </div>
-      </div>
-
       {/* Main Grid: Charts & Live Activities */}
       <div style={{
         display: 'grid',
@@ -286,6 +228,60 @@ export default function Dashboard({ activeTier, onNavigate, simulationRules }) {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Collapsible GPO Policy Adherence */}
+      <div className="glass-card" style={{ padding: '0.75rem 1rem' }}>
+        <div
+          onClick={() => setShowGpoPanel(!showGpoPanel)}
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <ShieldCheck size={14} style={{ color: 'var(--accent-purple)' }} />
+            <span style={{ fontSize: '0.85rem', fontWeight: '600' }}>GPO Policy Adherence</span>
+            <span className={`metric-badge badge-purple`} style={{ fontSize: '0.6rem', padding: '0.05rem 0.3rem' }}>
+              {decisionLog.filter(d => d.decision?.sopRef).length} SOP refs
+            </span>
+          </div>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', transition: 'transform 0.2s', transform: showGpoPanel ? 'rotate(180deg)' : 'none' }}>
+            ▼
+          </span>
+        </div>
+        {showGpoPanel && (
+          <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
+              {sopRegistry.map(sop => {
+                const recentLogs = decisionLog.filter(d =>
+                  d.decision?.sopRef && sop.rules.some(r => r.id === d.decision.sopRef)
+                )
+                return (
+                  <div key={sop.id} style={{
+                    background: 'var(--bg-tertiary)', borderRadius: '6px', padding: '0.6rem',
+                    border: '1px solid var(--border-color)', opacity: recentLogs.length > 0 ? 1 : 0.45
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.15rem' }}>
+                      <span style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: 'var(--accent-purple)', fontWeight: '700' }}>{sop.id} v{sop.version}</span>
+                      <span style={{ fontSize: '0.55rem', color: recentLogs.length > 0 ? 'var(--success)' : 'var(--text-muted)' }}>
+                        {recentLogs.length > 0 ? `${recentLogs.length}x applied` : 'idle'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.7rem', fontWeight: '600', color: 'var(--text-primary)' }}>{sop.title}</div>
+                  </div>
+                )
+              })}
+            </div>
+            <div style={{
+              padding: '0.4rem 0.6rem', background: 'var(--bg-secondary)',
+              borderRadius: '4px', fontSize: '0.65rem', color: 'var(--text-secondary)',
+              display: 'flex', gap: '1rem', flexWrap: 'wrap'
+            }}>
+              <span>Threshold: <strong>${effectiveRules.autoApproveThreshold.toLocaleString()}</strong></span>
+              <span>Dunning: <strong>Every {effectiveRules.dunningEscalation}d</strong></span>
+              <span>E-Invoice: <strong>{effectiveRules.requireEInvoice ? 'On' : 'Off'}</strong></span>
+              <span>Sync: <strong>{effectiveRules.syncTiming}</strong></span>
+            </div>
+          </div>
+        )}
       </div>
 
     </div>
