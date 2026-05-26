@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Mail, AlertCircle, Sparkles, Send, RefreshCw, Eye, Database, ArrowRight, PlusCircle } from 'lucide-react'
 import { useMockDatabase } from '../context/MockDatabaseContext'
+import { evaluateRules } from '../ruleEngine'
 
 export default function AutonomousInbox({ activeTier, simulationRules }) {
   const { invoices, applyRemittance, resolveDisputeAction, addLog, addDecisionLog, sopRegistry, gpoRules } = useMockDatabase()
@@ -62,6 +63,29 @@ export default function AutonomousInbox({ activeTier, simulationRules }) {
   const [customBody, setCustomBody] = useState('Hi, we noticed a billing discrepancy on INV-88912. The pricing agreement states SKU CL-901 should be billed at $500, but we were billed at $600. Please adjust by $800.00.')
 
   const activeEmail = emails.find(e => e.id === selectedId)
+
+  // Rule engine: evaluate SOP conditions against active email context
+  const matchedRules = useMemo(() => {
+    if (!activeEmail) return []
+    const e = activeEmail
+    const ctx = {
+      claimWithinThreshold: e.entities.claimedAmount <= rules.autoApproveThreshold,
+      amountWithinThreshold: e.entities.claimedAmount <= rules.autoApproveThreshold,
+      podVerified: e.category === 'dispute' && e.status === 'pending',
+      contractMismatch: false,
+      overrideApproved: false,
+      singleInvoice: !Array.isArray(e.entities.invoice),
+      multiInvoice: Array.isArray(e.entities.invoice),
+      exactMatch: e.category === 'cash_app',
+      partialMatch: e.category === 'cash_app' && e.entities.claimedAmount > 0,
+      xmlSchemaValid: e.category !== 'compliance',
+      crossBorderEU: false,
+      skuFound: false,
+      errorUnder3pct: false,
+      errorOver10pct: false,
+    }
+    return evaluateRules(sopRegistry, [e.category === 'dispute' ? 'dispute' : e.category === 'cash_app' ? 'cash_app' : 'compliance', 'governance'], ctx)
+  }, [activeEmail, rules, sopRegistry])
 
   // Regex parser simulating LLM entity extraction
   const runNLPExtractor = (body, sender, subject) => {
@@ -139,11 +163,10 @@ export default function AutonomousInbox({ activeTier, simulationRules }) {
     setTimeout(() => {
       setEmails(prev => prev.map(e => e.id === id ? { ...e, status: newStatus } : e))
       
-      const rec = recommendation
       addDecisionLog({
         agentId: 'AutonomousInbox',
         input: { sender: actionEmail.sender, subject: actionEmail.subject, category: actionEmail.category, entities: actionEmail.entities },
-        decision: { action: newStatus === 'processed' ? 'approve' : 'reject', confidence: actionEmail.confidence, sopRef: rec.sopRef },
+        decision: { action: newStatus === 'processed' ? 'approve' : 'reject', confidence: actionEmail.confidence, sopRefs: matchedRules.map(r => r.id) },
         outcome: newStatus === 'processed' ? 'ERP synced' : 'Flagged for GPO audit',
         category: actionEmail.category
       })
@@ -171,33 +194,36 @@ export default function AutonomousInbox({ activeTier, simulationRules }) {
 
   const erpRecord = getERPRecordDetails()
 
-  // Apply GPO rules + SOP registry to action decisions
+  // Apply GPO rules + rule engine to action decisions
   const getActionRecommendation = () => {
+    const topMatch = matchedRules[0]
+    const topSop = topMatch ? topMatch.id : null
+
     if (activeEmail.category === 'compliance' && rules.requireEInvoice) {
       return {
         action: 'reject_compliance',
         text: 'Reject & Auto-Notify Billing Hub',
-        desc: 're-routing billing payload to corrected API endpoint per SOP-005-R1.',
-        sopRef: 'SOP-005-R1'
+        desc: topMatch ? topMatch.description : 're-routing billing payload to corrected API endpoint.',
+        sopRef: topSop || 'SOP-005-R1'
       }
     }
 
     if (activeEmail.category === 'dispute') {
       const isBelowThreshold = activeEmail.entities.claimedAmount <= rules.autoApproveThreshold
       
-      if (isBelowThreshold) {
+      if (isBelowThreshold && topMatch?.action === 'auto_approve') {
         return {
           action: 'approve',
           text: 'Auto-Approve Adjustment',
-          desc: `within GPO auto-approve limit of $${rules.autoApproveThreshold.toLocaleString()}. Per SOP-001-R1 ready to post credit note.`,
-          sopRef: 'SOP-001-R1'
+          desc: `${topMatch.description} (GPO limit: $${rules.autoApproveThreshold.toLocaleString()})`,
+          sopRef: topSop || 'SOP-001-R1'
         }
       } else {
         return {
           action: 'flag',
           text: 'Flag for Manual GPO Sign-off',
-          desc: `exceeds active threshold of $${rules.autoApproveThreshold.toLocaleString()}. Refer to SOP-001-R2. SOX check required.`,
-          sopRef: 'SOP-001-R2'
+          desc: topMatch ? topMatch.description : `exceeds active threshold of $${rules.autoApproveThreshold.toLocaleString()}. SOX check required.`,
+          sopRef: topSop || 'SOP-001-R2'
         }
       }
     }
@@ -205,8 +231,8 @@ export default function AutonomousInbox({ activeTier, simulationRules }) {
     return {
       action: 'approve',
       text: 'Match & Clear Outstanding AR',
-      desc: 'Remittance details align per SOP-002-R1. Ready to post receipts.',
-      sopRef: 'SOP-002-R1'
+      desc: topMatch ? topMatch.description : 'Remittance details align. Ready to post receipts.',
+      sopRef: topSop || 'SOP-002-R1'
     }
   }
 
@@ -434,11 +460,13 @@ export default function AutonomousInbox({ activeTier, simulationRules }) {
                 }}>
                   <Sparkles size={12} style={{ color: 'var(--accent-purple)' }} />
                   <span>Agent Action Proposal: <strong>{recommendation.text}</strong> ({recommendation.desc})</span>
-                  {recommendation.sopRef && (
-                    <span className="metric-badge badge-purple" style={{ fontSize: '0.6rem', padding: '0.05rem 0.3rem', marginLeft: 'auto' }}>
-                      {recommendation.sopRef}
-                    </span>
-                  )}
+                  <div style={{ fontSize: '0.6rem', display: 'flex', gap: '0.2rem', flexWrap: 'wrap' }}>
+                    {matchedRules.map(r => (
+                      <span key={r.id} className="metric-badge badge-purple" style={{ fontSize: '0.55rem', padding: '0.05rem 0.25rem' }}>
+                        {r.id}
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '1rem' }}>

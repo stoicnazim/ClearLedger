@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { FileSpreadsheet, ShieldAlert, CheckCircle, RefreshCw, FileText, DollarSign } from 'lucide-react'
 import { useMockDatabase } from '../context/MockDatabaseContext'
+import { evaluateRules } from '../ruleEngine'
 
 export default function DisputeResolver({ simulationRules }) {
   const { disputes, resolveDisputeAction, contractCatalog, addDecisionLog, gpoRules, sopRegistry } = useMockDatabase()
@@ -39,20 +40,28 @@ export default function DisputeResolver({ simulationRules }) {
     return { errorMargin: Math.round(errorMargin * 10) / 10, matchLevel, expectedAmount: Math.round(expectedAmount), contractPrice }
   })()
 
+  // Rule engine: evaluate SOP conditions against current dispute context
+  const ruleContext = active ? {
+    podVerified: active.podStatus === 'verified',
+    claimWithinThreshold: (active.claimAmount || 0) <= effectiveRules.autoApproveThreshold,
+    contractMismatch: contractMatch?.matchLevel === 'rejected',
+    overrideApproved: false,
+    amountWithinThreshold: (active.claimAmount || 0) <= effectiveRules.autoApproveThreshold,
+    skuFound: !!(active.sku && contractCatalog[active.sku]),
+    errorUnder3pct: contractMatch?.matchLevel === 'approved',
+    errorOver10pct: contractMatch?.matchLevel === 'rejected',
+  } : {}
+  const matchedRules = active ? evaluateRules(sopRegistry, ['dispute', 'pricing', 'governance'], ruleContext) : []
+
   const handleResolve = (id, action) => {
     setIsResolving(true)
     const targetDisp = disputes.find(d => d.id === id) || active
     setTimeout(() => {
       resolveDisputeAction(id, action)
-      const applicableSops = []
-      if (targetDisp.podStatus === 'verified' && (targetDisp.claimAmount || 0) <= effectiveRules.autoApproveThreshold) applicableSops.push('SOP-001-R1')
-      if (contractMatch?.matchLevel === 'approved') applicableSops.push('SOP-007-R2')
-      if (contractMatch?.matchLevel === 'rejected') applicableSops.push('SOP-007-R3')
-      if ((targetDisp.claimAmount || 0) > effectiveRules.autoApproveThreshold) applicableSops.push('SOP-001-R2')
       addDecisionLog({
         agentId: 'DisputeResolver',
         input: { disputeId: id, sku: targetDisp.sku, claimAmount: targetDisp.claimAmount, podStatus: targetDisp.podStatus },
-        decision: { action, contractMatch: contractMatch?.matchLevel || 'unknown', errorMargin: contractMatch?.errorMargin || 0, sopRefs: applicableSops },
+        decision: { action, contractMatch: contractMatch?.matchLevel || 'unknown', errorMargin: contractMatch?.errorMargin || 0, sopRefs: matchedRules.map(r => r.id) },
         outcome: action === 'approved' ? 'Credit memo posted' : 'Counter-dispute filed',
         category: 'dispute'
       })
@@ -268,14 +277,9 @@ export default function DisputeResolver({ simulationRules }) {
                 overflowY: 'auto'
               }}>
                 {(() => {
-                  const contractBlock = contractMatch?.matchLevel === 'rejected'
                   const podOk = active.podStatus === 'verified'
                   const underThreshold = (active.claimAmount || 0) <= effectiveRules.autoApproveThreshold
-                  const applicableSops = []
-                  if (podOk && underThreshold) applicableSops.push('SOP-001-R1')
-                  if (contractMatch?.matchLevel === 'approved') applicableSops.push('SOP-007-R2')
-                  if (contractMatch?.matchLevel === 'rejected') applicableSops.push('SOP-007-R3')
-                  if (!underThreshold) applicableSops.push('SOP-001-R2')
+                  const applicableSops = matchedRules
                   const canAutoApprove = podOk && underThreshold && contractMatch?.matchLevel !== 'rejected' && contractMatch?.matchLevel !== 'unknown'
 
                   if (canAutoApprove) {
@@ -291,14 +295,11 @@ export default function DisputeResolver({ simulationRules }) {
                             }
                           </p>
                           <div style={{ fontSize: '0.65rem', marginTop: '0.25rem', display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
-                            {applicableSops.map(sopId => {
-                              const sop = sopRegistry.flatMap(s => s.rules).find(r => r.id === sopId)
-                              return sop ? (
-                                <span key={sopId} className="metric-badge badge-purple" style={{ fontSize: '0.6rem', padding: '0.05rem 0.3rem' }}>
-                                  {sop.id}
-                                </span>
-                              ) : null
-                            })}
+                            {applicableSops.map(r => (
+                              <span key={r.id} className="metric-badge badge-purple" style={{ fontSize: '0.6rem', padding: '0.05rem 0.3rem' }}>
+                                {r.id}
+                              </span>
+                            ))}
                           </div>
                         </div>
                       </>
@@ -311,19 +312,16 @@ export default function DisputeResolver({ simulationRules }) {
                         <strong style={{ color: 'var(--text-primary)' }}>Mismatch Flagged:</strong>
                         <p style={{ color: 'var(--text-secondary)', marginTop: '0.15rem', lineHeight: '1.3' }}>
                           {contractMatch?.matchLevel === 'rejected'
-                            ? `Claim of $${(active.claimAmount || 0).toLocaleString()} deviates ${contractMatch.errorMargin}% from contract catalog price (expected $${contractMatch.expectedAmount.toLocaleString()}). Refer to ${applicableSops.join(', ')}.`
-                            : `Carrier logged clean delivery without shortages. Customer claim lacks exception documentation. Rejecting deduction recommended per ${applicableSops.length ? applicableSops.join(', ') : 'SOP-001-R2'}.`
+                            ? `Claim of $${(active.claimAmount || 0).toLocaleString()} deviates ${contractMatch.errorMargin}% from contract catalog price (expected $${contractMatch.expectedAmount.toLocaleString()}). Refer to ${applicableSops.map(r => r.id).join(', ')}.`
+                            : `Carrier logged clean delivery without shortages. Customer claim lacks exception documentation. Rejecting deduction recommended per ${applicableSops.length ? applicableSops.map(r => r.id).join(', ') : 'SOP-001-R2'}.`
                           }
                         </p>
                         <div style={{ fontSize: '0.65rem', marginTop: '0.25rem', display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
-                          {applicableSops.map(sopId => {
-                            const sop = sopRegistry.flatMap(s => s.rules).find(r => r.id === sopId)
-                            return sop ? (
-                              <span key={sopId} className="metric-badge badge-warning" style={{ fontSize: '0.6rem', padding: '0.05rem 0.3rem' }}>
-                                {sop.id}
-                              </span>
-                            ) : null
-                          })}
+                          {applicableSops.map(r => (
+                            <span key={r.id} className="metric-badge badge-warning" style={{ fontSize: '0.6rem', padding: '0.05rem 0.3rem' }}>
+                              {r.id}
+                            </span>
+                          ))}
                         </div>
                       </div>
                     </>

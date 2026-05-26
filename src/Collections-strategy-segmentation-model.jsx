@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useLiveActuals, liveBadgeStyle, getKpiActual } from "./liveActuals";
 import { useMockDatabase } from "./context/MockDatabaseContext";
+import { evaluateRules } from "./ruleEngine";
 
 // ─── TIER DEFINITIONS ───
 const TIERS = [
@@ -403,7 +404,7 @@ function SegmentationTab({ tier, accent }) {
   const seg = segments[selected];
 
   // Dynamic segment scoring from live database
-  const { invoices, disputes, collectionActivities, customers, derived } = useMockDatabase()
+  const { invoices, disputes, collectionActivities, customers, derived, sopRegistry, gpoRules } = useMockDatabase()
   const segmentScores = useMemo(() => {
     const tierKey = { sme: 'Silver', mid: 'Gold', large: 'Platinum', global: 'Platinum' }
     const tierCustomers = customers.filter(c => c.tier === tierKey[tier])
@@ -431,6 +432,17 @@ function SegmentationTab({ tier, accent }) {
       return { ...seg, monetaryScore, frequencyScore, disputeScore, recencyScore, composite }
     })
   }, [tier, customers, invoices, disputes, collectionActivities])
+
+  // Evaluate collections SOP rules for the selected segment
+  const matchedRules = useMemo(() => {
+    const isRisky = seg.name.toLowerCase().includes('at-risk') || seg.risk === 'High'
+    return evaluateRules(sopRegistry, 'collections', {
+      earlyStage: seg.name === 'Reliable Core' || seg.risk === 'Low',
+      escalationDue: isRisky || seg.risk === 'Medium',
+      dpdOver45: isRisky,
+      noPtp: isRisky,
+    })
+  }, [seg, sopRegistry])
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -555,6 +567,24 @@ function SegmentationTab({ tier, accent }) {
             <div style={{ fontSize: 13, color: "#CBD5E1", lineHeight: 1.5 }}>{item.value}</div>
           </div>
         ))}
+
+        {matchedRules.length > 0 && (
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #1E293B" }}>
+            <div style={{ fontSize: 10, color: "#64748B", fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 6 }}>Active SOP Protocols</div>
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+              {matchedRules.map(r => (
+                <div key={r.id} style={{
+                  background: "#0B0F1A", borderRadius: 6, padding: "6px 10px",
+                  border: "1px solid #1E293B", fontSize: 11, color: "#CBD5E1"
+                }}>
+                  <span style={{ color: "#A855F7", fontWeight: 700, ...monoFont }}>{r.id}</span>
+                  <span style={{ color: "#64748B", margin: "0 4px" }}>·</span>
+                  {r.description}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );

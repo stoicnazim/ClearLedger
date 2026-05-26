@@ -69,8 +69,8 @@ export const SOP_REGISTRY = [
     category: 'cash_app',
     rules: [
       { id: 'SOP-002-R1', description: 'Auto-match single invoice remittance with 100% amount match', condition: { singleInvoice: true, exactMatch: true }, action: 'auto_match', priority: 1 },
-      { id: 'SOP-002-R2', description: 'Flag partial payments for collector review and short-payment investigation', condition: { partialMatch: true }, action: 'flag_review', priority: 2 },
-      { id: 'SOP-002-R3', description: 'Route multi-invoice bulk remittances through cash application workbench', condition: { multiInvoice: true }, action: 'route_workbench', priority: 3 },
+      { id: 'SOP-002-R2', description: 'Flag partial payments for collector review', condition: { partialMatch: true }, action: 'flag_review', priority: 2 },
+      { id: 'SOP-002-R3', description: 'Route multi-invoice bulk remittances through workbench', condition: { multiInvoice: true }, action: 'route_workbench', priority: 3 },
     ]
   },
   {
@@ -78,9 +78,9 @@ export const SOP_REGISTRY = [
     title: 'Collections Dunning & Escalation Protocol',
     category: 'collections',
     rules: [
-      { id: 'SOP-003-R1', description: 'Auto-send courtesy reminder at Day 0-3 for all open invoices', condition: { dpdRange: '0-3' }, action: 'auto_email_courtesy', priority: 1 },
-      { id: 'SOP-003-R2', description: 'Escalate to phone call cadence based on GPO dunningEscalation setting', condition: { cadenceMatch: true }, action: 'phone_call', priority: 2 },
-      { id: 'SOP-003-R3', description: 'Trigger credit hold review for accounts exceeding 45 DPD with no PTP', condition: { dpdOver45: true, noPtp: true }, action: 'credit_hold_review', priority: 3 },
+      { id: 'SOP-003-R1', description: 'Auto-send courtesy reminder for early-stage (0-3 DPD) invoices', condition: { earlyStage: true }, action: 'auto_email_courtesy', priority: 1 },
+      { id: 'SOP-003-R2', description: 'Escalate to phone call based on GPO dunningEscalation cadence', condition: { escalationDue: true }, action: 'phone_call', priority: 2 },
+      { id: 'SOP-003-R3', description: 'Trigger credit hold review for accounts >45 DPD with no PTP', condition: { dpdOver45: true, noPtp: true }, action: 'credit_hold_review', priority: 3 },
     ]
   },
   {
@@ -88,8 +88,8 @@ export const SOP_REGISTRY = [
     title: 'Credit Limit Management & Risk Scoring',
     category: 'credit',
     rules: [
-      { id: 'SOP-004-R1', description: 'Auto-approve credit limit increases under 10% of existing limit for low-risk accounts', condition: { increaseUnder10pct: true, lowRisk: true }, action: 'auto_approve', priority: 1 },
-      { id: 'SOP-004-R2', description: 'Flag credit limit increases over 25% for Credit Committee review', condition: { increaseOver25pct: true }, action: 'committee_review', priority: 2 },
+      { id: 'SOP-004-R1', description: 'Auto-approve increases under 10% for low-risk accounts', condition: { increaseUnder10pct: true, lowRisk: true }, action: 'auto_approve', priority: 1 },
+      { id: 'SOP-004-R2', description: 'Flag increases over 25% for Credit Committee review', condition: { increaseOver25pct: true }, action: 'committee_review', priority: 2 },
     ]
   },
   {
@@ -97,8 +97,8 @@ export const SOP_REGISTRY = [
     title: 'E-Invoicing Compliance & Mandate Enforcement',
     category: 'compliance',
     rules: [
-      { id: 'SOP-005-R1', description: 'Validate XML schema against local mandate (KSeF, SDI, Peppol, CFDI) before transmission', condition: { xmlSchemaValid: false }, action: 'reject_resubmit', priority: 1 },
-      { id: 'SOP-005-R2', description: 'Route e-invoice through approved PEPPOL access point for cross-border EU invoices', condition: { crossBorderEU: true }, action: 'route_peppol', priority: 2 },
+      { id: 'SOP-005-R1', description: 'Reject and notify billing hub when XML schema invalid per local mandate', condition: { xmlSchemaValid: false }, action: 'reject_resubmit', priority: 1 },
+      { id: 'SOP-005-R2', description: 'Route cross-border EU invoices through PEPPOL access point', condition: { crossBorderEU: true }, action: 'route_peppol', priority: 2 },
     ]
   },
   {
@@ -115,7 +115,7 @@ export const SOP_REGISTRY = [
     title: 'Contract Catalog Price Verification',
     category: 'pricing',
     rules: [
-      { id: 'SOP-007-R1', description: 'Verify claimed deduction against contract catalog base price × quantity', condition: { skuFound: true }, action: 'calculate_expected', priority: 1 },
+      { id: 'SOP-007-R1', description: 'Verify claimed deduction against contract catalog basePrice × quantity', condition: { skuFound: true }, action: 'calculate_expected', priority: 1 },
       { id: 'SOP-007-R2', description: 'Auto-approve deduction when error margin < 3% of contract price', condition: { errorUnder3pct: true }, action: 'auto_approve', priority: 2 },
       { id: 'SOP-007-R3', description: 'Reject deduction when error margin exceeds 10% of contract price', condition: { errorOver10pct: true }, action: 'reject', priority: 2 },
     ]
