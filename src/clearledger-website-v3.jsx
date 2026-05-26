@@ -294,7 +294,7 @@ export default function ClearLedgerWebsite({ onStartDiagnostic, onShowLegal }) {
     { dim: "Price Range", big4: "€150K – 500K+", saas: "€5K – 50K/yr (license only)", us: "€5K – 80K (fixed scope)" },
     { dim: "What You Get", big4: "PowerPoint recommendations", saas: "A tool with no implementation help", us: "Working frameworks + implementation roadmap" },
     { dim: "Timeline", big4: "6–12 months", saas: "3–6 months to deploy", us: "2 weeks – 6 months" },
-    { dim: "Company Size Fit", big4: "Enterprise only (1,000+)", saas: "Mid-market (200+)", us: "Growing companies (10 – 1,000)" },
+    { dim: "Company Size Fit", big4: "Enterprise only (1,000+)", saas: "Mid-market (200+)", us: "All company sizes" },
     { dim: "After Engagement", big4: "Consultant dependency", saas: "Vendor lock-in", us: "Self-sufficient team + reusable tools" },
   ];
 
@@ -441,7 +441,6 @@ export default function ClearLedgerWebsite({ onStartDiagnostic, onShowLegal }) {
                   {[
                     { val: "APQC PCF v8.0", sub: "Framework aligned" },
                     { val: "20+ Modules", sub: "Analytical toolkit" },
-                    { val: "10–1,000", sub: "Employee sweet spot" },
                   ].map((s, i) => (
                     <div key={i}>
                       <div style={{ fontFamily: C.mono, fontSize: "13px", color: C.accent, fontWeight: 600 }}>{s.val}</div>
