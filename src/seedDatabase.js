@@ -50,6 +50,78 @@ const CREDIT_RATINGS = ['AAA', 'AA', 'A+', 'A', 'A-', 'BBB+', 'BBB', 'BB+', 'BB'
 const INDUSTRIES = ['Retail', 'CPG', 'Manufacturing', 'Technology', 'Pharma', 'Logistics', 'Automotive', 'Energy']
 
 // SKU catalog (carried over + expanded)
+/* ── SOP Policy Registry (Global Process Owner rule book) ── */
+export const SOP_REGISTRY = [
+  {
+    id: 'SOP-001', version: '2.1', effectiveDate: '2026-03-01',
+    title: 'Dispute Resolution & Credit Memo Authorization',
+    category: 'dispute',
+    rules: [
+      { id: 'SOP-001-R1', description: 'Auto-approve credit memo when POD verified and claim ≤ autoApproveThreshold', condition: { podVerified: true, claimWithinThreshold: true }, action: 'auto_approve', priority: 1 },
+      { id: 'SOP-001-R2', description: 'Flag for GPO manager review when claim exceeds autoApproveThreshold', condition: { claimWithinThreshold: false }, action: 'flag_review', priority: 2 },
+      { id: 'SOP-001-R3', description: 'Reject claim when contract price mismatch exceeds 10% error margin', condition: { contractMismatch: true }, action: 'reject', priority: 1 },
+      { id: 'SOP-001-R4', description: 'Override available for GPO director when client relationship overrides standard policy', condition: { overrideApproved: true }, action: 'override_approve', priority: 5 },
+    ]
+  },
+  {
+    id: 'SOP-002', version: '1.3', effectiveDate: '2026-04-15',
+    title: 'Cash Application & Remittance Matching',
+    category: 'cash_app',
+    rules: [
+      { id: 'SOP-002-R1', description: 'Auto-match single invoice remittance with 100% amount match', condition: { singleInvoice: true, exactMatch: true }, action: 'auto_match', priority: 1 },
+      { id: 'SOP-002-R2', description: 'Flag partial payments for collector review and short-payment investigation', condition: { partialMatch: true }, action: 'flag_review', priority: 2 },
+      { id: 'SOP-002-R3', description: 'Route multi-invoice bulk remittances through cash application workbench', condition: { multiInvoice: true }, action: 'route_workbench', priority: 3 },
+    ]
+  },
+  {
+    id: 'SOP-003', version: '2.0', effectiveDate: '2026-02-01',
+    title: 'Collections Dunning & Escalation Protocol',
+    category: 'collections',
+    rules: [
+      { id: 'SOP-003-R1', description: 'Auto-send courtesy reminder at Day 0-3 for all open invoices', condition: { dpdRange: '0-3' }, action: 'auto_email_courtesy', priority: 1 },
+      { id: 'SOP-003-R2', description: 'Escalate to phone call cadence based on GPO dunningEscalation setting', condition: { cadenceMatch: true }, action: 'phone_call', priority: 2 },
+      { id: 'SOP-003-R3', description: 'Trigger credit hold review for accounts exceeding 45 DPD with no PTP', condition: { dpdOver45: true, noPtp: true }, action: 'credit_hold_review', priority: 3 },
+    ]
+  },
+  {
+    id: 'SOP-004', version: '1.2', effectiveDate: '2026-05-01',
+    title: 'Credit Limit Management & Risk Scoring',
+    category: 'credit',
+    rules: [
+      { id: 'SOP-004-R1', description: 'Auto-approve credit limit increases under 10% of existing limit for low-risk accounts', condition: { increaseUnder10pct: true, lowRisk: true }, action: 'auto_approve', priority: 1 },
+      { id: 'SOP-004-R2', description: 'Flag credit limit increases over 25% for Credit Committee review', condition: { increaseOver25pct: true }, action: 'committee_review', priority: 2 },
+    ]
+  },
+  {
+    id: 'SOP-005', version: '3.0', effectiveDate: '2026-01-15',
+    title: 'E-Invoicing Compliance & Mandate Enforcement',
+    category: 'compliance',
+    rules: [
+      { id: 'SOP-005-R1', description: 'Validate XML schema against local mandate (KSeF, SDI, Peppol, CFDI) before transmission', condition: { xmlSchemaValid: false }, action: 'reject_resubmit', priority: 1 },
+      { id: 'SOP-005-R2', description: 'Route e-invoice through approved PEPPOL access point for cross-border EU invoices', condition: { crossBorderEU: true }, action: 'route_peppol', priority: 2 },
+    ]
+  },
+  {
+    id: 'SOP-006', version: '1.1', effectiveDate: '2026-04-01',
+    title: 'Auto-Approval Threshold Governance',
+    category: 'governance',
+    rules: [
+      { id: 'SOP-006-R1', description: 'All auto-approvals must stay within GPO-defined autoApproveThreshold', condition: { amountWithinThreshold: true }, action: 'allow_auto_approve', priority: 1 },
+      { id: 'SOP-006-R2', description: 'Quarterly audit of auto-approved transactions by Internal Audit', condition: { quarterlyAuditDue: true }, action: 'schedule_audit', priority: 5 },
+    ]
+  },
+  {
+    id: 'SOP-007', version: '1.0', effectiveDate: '2026-05-01',
+    title: 'Contract Catalog Price Verification',
+    category: 'pricing',
+    rules: [
+      { id: 'SOP-007-R1', description: 'Verify claimed deduction against contract catalog base price × quantity', condition: { skuFound: true }, action: 'calculate_expected', priority: 1 },
+      { id: 'SOP-007-R2', description: 'Auto-approve deduction when error margin < 3% of contract price', condition: { errorUnder3pct: true }, action: 'auto_approve', priority: 2 },
+      { id: 'SOP-007-R3', description: 'Reject deduction when error margin exceeds 10% of contract price', condition: { errorOver10pct: true }, action: 'reject', priority: 2 },
+    ]
+  },
+]
+
 export const SKU_CATALOG = {
   'CL-901': { name: 'Premium OtC Module A', basePrice: 500.00 },
   'CL-502': { name: 'Standard AR Adapter', basePrice: 150.00 },

@@ -3,7 +3,8 @@ import { Mail, AlertCircle, Sparkles, Send, RefreshCw, Eye, Database, ArrowRight
 import { useMockDatabase } from '../context/MockDatabaseContext'
 
 export default function AutonomousInbox({ activeTier, simulationRules }) {
-  const { invoices, applyRemittance, resolveDisputeAction, addLog } = useMockDatabase()
+  const { invoices, applyRemittance, resolveDisputeAction, addLog, addDecisionLog, sopRegistry, gpoRules } = useMockDatabase()
+  const effectiveRules = simulationRules || gpoRules
 
   // Fallback defaults if parent doesn't pass simulationRules yet
   const rules = simulationRules || {
@@ -90,8 +91,14 @@ export default function AutonomousInbox({ activeTier, simulationRules }) {
       code = 'CL-502'
     }
 
-    // Determine confidence
-    const confidence = Math.floor(85 + Math.random() * 15)
+    // Rule-based confidence: entity extraction quality matrix
+    const hasInvoice = Array.isArray(invoice) ? invoice.length > 0 : !!invoice
+    const hasAmount = claimedAmount > 0
+    const hasReason = reason !== 'Pricing Discrepancy' || body.toLowerCase().includes('short') || body.toLowerCase().includes('damage')
+    const hasCode = code && code !== 'CL-901'
+    const hasSignal = body.length > 30 && (body.toLowerCase().includes('invoice') || body.toLowerCase().includes('payment'))
+    const extractQuality = [hasInvoice, hasAmount, hasReason, hasCode, hasSignal].filter(Boolean).length
+    const confidence = Math.min(99, 50 + extractQuality * 10 + (hasAmount && hasInvoice ? 5 : 0))
 
     const reasoning = `NLP parser identified ${category.toUpperCase()} intent with ${confidence}% confidence. Extracted targets: ${Array.isArray(invoice) ? invoice.join(', ') : invoice} and values: $${claimedAmount.toLocaleString()}.`
 
@@ -127,16 +134,26 @@ export default function AutonomousInbox({ activeTier, simulationRules }) {
 
   const handleAction = (id, newStatus) => {
     setIsProcessing(true)
+    const actionEmail = emails.find(e => e.id === id) || activeEmail
     
     setTimeout(() => {
       setEmails(prev => prev.map(e => e.id === id ? { ...e, status: newStatus } : e))
       
+      const rec = recommendation
+      addDecisionLog({
+        agentId: 'AutonomousInbox',
+        input: { sender: actionEmail.sender, subject: actionEmail.subject, category: actionEmail.category, entities: actionEmail.entities },
+        decision: { action: newStatus === 'processed' ? 'approve' : 'reject', confidence: actionEmail.confidence, sopRef: rec.sopRef },
+        outcome: newStatus === 'processed' ? 'ERP synced' : 'Flagged for GPO audit',
+        category: actionEmail.category
+      })
+
       // Update ERP system ledger records dynamically in Mock Context
       if (newStatus === 'processed') {
-        if (activeEmail.category === 'cash_app') {
-          applyRemittance(activeEmail.entities.invoice, activeEmail.entities.claimedAmount, activeEmail.entities.code)
-        } else if (activeEmail.category === 'dispute') {
-          resolveDisputeAction(activeEmail.entities.invoice, 'approved')
+        if (actionEmail.category === 'cash_app') {
+          applyRemittance(actionEmail.entities.invoice, actionEmail.entities.claimedAmount, actionEmail.entities.code)
+        } else if (actionEmail.category === 'dispute') {
+          resolveDisputeAction(actionEmail.entities.invoice, 'approved')
         }
       }
       
@@ -154,13 +171,14 @@ export default function AutonomousInbox({ activeTier, simulationRules }) {
 
   const erpRecord = getERPRecordDetails()
 
-  // Apply GPO rules to action decisions
+  // Apply GPO rules + SOP registry to action decisions
   const getActionRecommendation = () => {
     if (activeEmail.category === 'compliance' && rules.requireEInvoice) {
       return {
         action: 'reject_compliance',
         text: 'Reject & Auto-Notify Billing Hub',
-        desc: 're-routing billing payload to corrected API endpoint.'
+        desc: 're-routing billing payload to corrected API endpoint per SOP-005-R1.',
+        sopRef: 'SOP-005-R1'
       }
     }
 
@@ -171,13 +189,15 @@ export default function AutonomousInbox({ activeTier, simulationRules }) {
         return {
           action: 'approve',
           text: 'Auto-Approve Adjustment',
-          desc: 'within the GPO auto-approve limit. Ready to post credit note.'
+          desc: `within GPO auto-approve limit of $${rules.autoApproveThreshold.toLocaleString()}. Per SOP-001-R1 ready to post credit note.`,
+          sopRef: 'SOP-001-R1'
         }
       } else {
         return {
           action: 'flag',
           text: 'Flag for Manual GPO Sign-off',
-          desc: `exceeds active threshold of $${rules.autoApproveThreshold.toLocaleString()}. SOX check required.`
+          desc: `exceeds active threshold of $${rules.autoApproveThreshold.toLocaleString()}. Refer to SOP-001-R2. SOX check required.`,
+          sopRef: 'SOP-001-R2'
         }
       }
     }
@@ -185,7 +205,8 @@ export default function AutonomousInbox({ activeTier, simulationRules }) {
     return {
       action: 'approve',
       text: 'Match & Clear Outstanding AR',
-      desc: 'Remittance details align. Ready to post receipts.'
+      desc: 'Remittance details align per SOP-002-R1. Ready to post receipts.',
+      sopRef: 'SOP-002-R1'
     }
   }
 
@@ -413,6 +434,11 @@ export default function AutonomousInbox({ activeTier, simulationRules }) {
                 }}>
                   <Sparkles size={12} style={{ color: 'var(--accent-purple)' }} />
                   <span>Agent Action Proposal: <strong>{recommendation.text}</strong> ({recommendation.desc})</span>
+                  {recommendation.sopRef && (
+                    <span className="metric-badge badge-purple" style={{ fontSize: '0.6rem', padding: '0.05rem 0.3rem', marginLeft: 'auto' }}>
+                      {recommendation.sopRef}
+                    </span>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', gap: '1rem' }}>

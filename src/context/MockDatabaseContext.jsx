@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { seedDatabase, selectors, SKU_CATALOG } from '../seedDatabase'
+import { seedDatabase, selectors, SKU_CATALOG, SOP_REGISTRY } from '../seedDatabase'
 
 const MockDatabaseContext = createContext()
 
@@ -18,6 +18,21 @@ export function MockDatabaseProvider({ children }) {
   const [cashApplications, setCashApplications] = useState(dbSeed.cashApplications)
   const [collectionActivities] = useState(dbSeed.collectionActivities)
   const [logs, setLogs] = useState(INITIAL_LOGS)
+  const [decisionLog, setDecisionLog] = useState([])
+  const [gpoRules, setGpoRules] = useState({
+    autoApproveThreshold: 1000,
+    requireEInvoice: true,
+    syncTiming: 'realtime',
+    dunningEscalation: 7
+  })
+
+  const addDecisionLog = (entry) => {
+    setDecisionLog(prev => [{
+      id: `dec-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      timestamp: new Date().toISOString(),
+      ...entry
+    }, ...prev.slice(0, 499)])
+  }
 
   // Global KPIs calculated dynamically
   const [financials, setFinancials] = useState({
@@ -137,9 +152,14 @@ export function MockDatabaseProvider({ children }) {
       logs,
       derived,
       contractCatalog: SKU_CATALOG,
+      sopRegistry: SOP_REGISTRY,
+      gpoRules,
+      setGpoRules,
       resolveDisputeAction,
       applyRemittance,
       addLog,
+      addDecisionLog,
+      decisionLog,
       setDisputes,
       setInvoices
     }}>

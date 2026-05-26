@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useLiveActuals, liveBadgeStyle, getKpiActual } from "./liveActuals";
+import { useMockDatabase } from "./context/MockDatabaseContext";
 
 // ─── TIER DEFINITIONS ───
 const TIERS = [
@@ -401,6 +402,36 @@ function SegmentationTab({ tier, accent }) {
   const [selected, setSelected] = useState(0);
   const seg = segments[selected];
 
+  // Dynamic segment scoring from live database
+  const { invoices, disputes, collectionActivities, customers, derived } = useMockDatabase()
+  const segmentScores = useMemo(() => {
+    const tierKey = { sme: 'Silver', mid: 'Gold', large: 'Platinum', global: 'Platinum' }
+    const tierCustomers = customers.filter(c => c.tier === tierKey[tier])
+    const tierInvoices = invoices.filter(inv => tierCustomers.some(c => c.id === inv.customerId))
+    const tierDisputes = disputes.filter(d => tierCustomers.some(c => c.id === (d.customerId || d.customer)))
+    const tierActivities = collectionActivities.filter(a => tierCustomers.some(c => c.id === a.customerId))
+
+    return segments.map(seg => {
+      const segCustomers = tierCustomers.filter(c => c.segment === 'Strategic')
+      const segInvoices = invoices.filter(inv => segCustomers.some(c => c.id === inv.customerId))
+      const segDisputes = disputes.filter(d => segCustomers.some(c => c.id === (d.customerId || d.customer)))
+
+      const totalBalance = segInvoices.reduce((s, inv) => s + (inv.balance || 0), 0)
+      const overdueCount = segInvoices.filter(inv => inv.status === 'unpaid' && inv.balance > 0).length
+      const disputeCount = segDisputes.length
+      const disputeRatio = segInvoices.length > 0 ? disputeCount / segInvoices.length : 0
+      const totalActivities = tierActivities.length
+
+      const monetaryScore = Math.min(100, Math.round(totalBalance / 10000))
+      const frequencyScore = Math.min(100, Math.round(overdueCount * 15))
+      const disputeScore = Math.min(100, Math.round(disputeRatio * 100))
+      const recencyScore = segDisputes.length > 0 ? 60 : 95
+
+      const composite = Math.round((monetaryScore * 0.25 + frequencyScore * 0.25 + (100 - disputeScore) * 0.30 + recencyScore * 0.20))
+      return { ...seg, monetaryScore, frequencyScore, disputeScore, recencyScore, composite }
+    })
+  }, [tier, customers, invoices, disputes, collectionActivities])
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -465,6 +496,36 @@ function SegmentationTab({ tier, accent }) {
               <span style={{ fontSize: 10, color: "#94A3B8" }}>{s.name}</span>
             </div>
           ))}
+        </div>
+      </Card>
+
+      {/* Live Segment Health Scores */}
+      <Card style={{ borderColor: accent + '44' }}>
+        <div style={{ fontSize: 11, color: '#64748B', marginBottom: 12, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+          Live Segment Health Scores
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
+          {segmentScores.map(s => {
+            const scoreColor = s.composite >= 75 ? '#10B981' : s.composite >= 50 ? '#F59E0B' : '#EF4444'
+            return (
+              <div key={s.name} style={{
+                background: '#0B0F1A', borderRadius: 8, padding: '10px 12px',
+                border: `1px solid ${selected === segments.indexOf(s) ? s.color + '44' : '#1E293B'}`,
+                cursor: 'pointer'
+              }} onClick={() => setSelected(segments.indexOf(s))}>
+                <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 4 }}>{s.name}</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: scoreColor, ...monoFont }}>{s.composite}</div>
+                <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                  <Badge text={`M:${s.monetaryScore}`} color="#6366F1" />
+                  <Badge text={`F:${s.frequencyScore}`} color="#22D3EE" />
+                  <Badge text={`D:${s.disputeScore}`} color="#F59E0B" />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        <div style={{ fontSize: 10, color: '#475569', marginTop: 8, ...monoFont }}>
+          Recency/Frequency/Monetary/Dispute composite · Higher = healthier
         </div>
       </Card>
 

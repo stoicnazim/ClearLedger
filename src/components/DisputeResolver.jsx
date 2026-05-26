@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
-import { FileSpreadsheet, ShieldAlert, CheckCircle, RefreshCw, FileText } from 'lucide-react'
+import { FileSpreadsheet, ShieldAlert, CheckCircle, RefreshCw, FileText, DollarSign } from 'lucide-react'
 import { useMockDatabase } from '../context/MockDatabaseContext'
 
-export default function DisputeResolver() {
-  const { disputes, resolveDisputeAction, contractCatalog } = useMockDatabase()
+export default function DisputeResolver({ simulationRules }) {
+  const { disputes, resolveDisputeAction, contractCatalog, addDecisionLog, gpoRules, sopRegistry } = useMockDatabase()
+  const effectiveRules = simulationRules || gpoRules
   const [selectedId, setSelectedId] = useState('disp-1')
   const [isResolving, setIsResolving] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -24,10 +25,37 @@ export default function DisputeResolver() {
   // Ensure selected invoice is valid (fallback to first of filtered, or first of all)
   const active = filteredDisputes.find(d => d.id === selectedId) || filteredDisputes[0] || disputes[0]
 
+  // Contract matching: compare claimed amount vs contract catalog prices
+  const contractMatch = (() => {
+    if (!active) return null
+    const contractPrice = contractCatalog[active.sku]?.basePrice || 0
+    const expectedAmount = contractPrice * (active.quantityClaimed || 0)
+    const claimed = active.claimAmount || 0
+    if (expectedAmount === 0) return { errorMargin: null, matchLevel: 'unknown', expectedAmount: 0, contractPrice: 0 }
+    const errorMargin = Math.abs(claimed - expectedAmount) / expectedAmount * 100
+    let matchLevel = 'approved'
+    if (errorMargin > 10) matchLevel = 'rejected'
+    else if (errorMargin > 3) matchLevel = 'flagged'
+    return { errorMargin: Math.round(errorMargin * 10) / 10, matchLevel, expectedAmount: Math.round(expectedAmount), contractPrice }
+  })()
+
   const handleResolve = (id, action) => {
     setIsResolving(true)
+    const targetDisp = disputes.find(d => d.id === id) || active
     setTimeout(() => {
       resolveDisputeAction(id, action)
+      const applicableSops = []
+      if (targetDisp.podStatus === 'verified' && (targetDisp.claimAmount || 0) <= effectiveRules.autoApproveThreshold) applicableSops.push('SOP-001-R1')
+      if (contractMatch?.matchLevel === 'approved') applicableSops.push('SOP-007-R2')
+      if (contractMatch?.matchLevel === 'rejected') applicableSops.push('SOP-007-R3')
+      if ((targetDisp.claimAmount || 0) > effectiveRules.autoApproveThreshold) applicableSops.push('SOP-001-R2')
+      addDecisionLog({
+        agentId: 'DisputeResolver',
+        input: { disputeId: id, sku: targetDisp.sku, claimAmount: targetDisp.claimAmount, podStatus: targetDisp.podStatus },
+        decision: { action, contractMatch: contractMatch?.matchLevel || 'unknown', errorMargin: contractMatch?.errorMargin || 0, sopRefs: applicableSops },
+        outcome: action === 'approved' ? 'Credit memo posted' : 'Counter-dispute filed',
+        category: 'dispute'
+      })
       setIsResolving(false)
     }, 1200)
   }
@@ -188,6 +216,28 @@ export default function DisputeResolver() {
                   <div>Base Price: <strong style={{ color: 'var(--text-primary)' }}>${(contractCatalog[active.sku]?.basePrice || 0).toLocaleString()}</strong></div>
                   <div>Pricing Terms: <span style={{ textDecoration: 'underline' }}>EXW (Ex Works)</span></div>
                   <div>SOX Control: <span style={{ color: 'var(--success)', fontWeight: '600' }}>Active (OTC-04)</span></div>
+                  {contractMatch && contractMatch.matchLevel !== 'unknown' && (
+                    <div style={{ marginTop: '0.4rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.4rem' }}>
+                      <div style={{ fontSize: '0.7rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.2rem' }}>
+                        <DollarSign size={11} /> Contract Match <span style={{ fontSize: '0.6rem', fontWeight: 400, color: 'var(--text-muted)' }}>SOP-007</span>
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                        Expected: <strong>${contractMatch.expectedAmount.toLocaleString()}</strong> | Claimed: <strong>${(active.claimAmount || 0).toLocaleString()}</strong>
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                        Error: <span style={{
+                          color: contractMatch.matchLevel === 'approved' ? 'var(--success)' : contractMatch.matchLevel === 'flagged' ? 'var(--warning)' : 'var(--error)',
+                          fontWeight: '700'
+                        }}>{contractMatch.errorMargin}%</span>
+                        <span className={`metric-badge ${
+                          contractMatch.matchLevel === 'approved' ? 'badge-success' : 
+                          contractMatch.matchLevel === 'flagged' ? 'badge-warning' : 'badge-error'
+                        }`} style={{ fontSize: '0.6rem', marginLeft: '0.4rem', padding: '0.05rem 0.3rem' }}>
+                          {contractMatch.matchLevel === 'approved' ? 'Match ✓' : contractMatch.matchLevel === 'flagged' ? 'Review' : 'Mismatch'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -217,27 +267,68 @@ export default function DisputeResolver() {
                 boxSizing: 'border-box',
                 overflowY: 'auto'
               }}>
-                {active.podStatus === 'verified' ? (
-                  <>
-                    <CheckCircle size={18} style={{ color: 'var(--accent-purple)', flexShrink: 0, marginTop: '2px' }} />
-                    <div style={{ fontSize: '0.8rem' }}>
-                      <strong style={{ color: 'var(--text-primary)' }}>Agent Auto-Match Successful:</strong>
-                      <p style={{ color: 'var(--text-secondary)', marginTop: '0.15rem', lineHeight: '1.3' }}>
-                        Disputed shortage of {active.quantityClaimed} units matches shortage signed on carrier POD exception notes. Ready to approve.
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <ShieldAlert size={18} style={{ color: 'var(--error)', flexShrink: 0, marginTop: '2px' }} />
-                    <div style={{ fontSize: '0.8rem' }}>
-                      <strong style={{ color: 'var(--text-primary)' }}>Mismatch Flagged:</strong>
-                      <p style={{ color: 'var(--text-secondary)', marginTop: '0.15rem', lineHeight: '1.3' }}>
-                        Carrier logged clean delivery without shortages. Customer claim lacks exception documentation. Rejecting deduction recommended.
-                      </p>
-                    </div>
-                  </>
-                )}
+                {(() => {
+                  const contractBlock = contractMatch?.matchLevel === 'rejected'
+                  const podOk = active.podStatus === 'verified'
+                  const underThreshold = (active.claimAmount || 0) <= effectiveRules.autoApproveThreshold
+                  const applicableSops = []
+                  if (podOk && underThreshold) applicableSops.push('SOP-001-R1')
+                  if (contractMatch?.matchLevel === 'approved') applicableSops.push('SOP-007-R2')
+                  if (contractMatch?.matchLevel === 'rejected') applicableSops.push('SOP-007-R3')
+                  if (!underThreshold) applicableSops.push('SOP-001-R2')
+                  const canAutoApprove = podOk && underThreshold && contractMatch?.matchLevel !== 'rejected' && contractMatch?.matchLevel !== 'unknown'
+
+                  if (canAutoApprove) {
+                    return (
+                      <>
+                        <CheckCircle size={18} style={{ color: 'var(--accent-purple)', flexShrink: 0, marginTop: '2px' }} />
+                        <div style={{ fontSize: '0.8rem' }}>
+                          <strong style={{ color: 'var(--text-primary)' }}>Agent Auto-Match Successful:</strong>
+                          <p style={{ color: 'var(--text-secondary)', marginTop: '0.15rem', lineHeight: '1.3' }}>
+                            {contractMatch?.matchLevel === 'flagged'
+                              ? `POD verified but claim deviates ${contractMatch.errorMargin}% from contract pricing. Flagged for review per ${applicableSops.join(', ')}.`
+                              : `Disputed shortage of ${active.quantityClaimed} units matches POD exception notes. Contract pricing aligns within ${contractMatch?.errorMargin || 0}%. Ready to approve per ${applicableSops.join(', ')}.`
+                            }
+                          </p>
+                          <div style={{ fontSize: '0.65rem', marginTop: '0.25rem', display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+                            {applicableSops.map(sopId => {
+                              const sop = sopRegistry.flatMap(s => s.rules).find(r => r.id === sopId)
+                              return sop ? (
+                                <span key={sopId} className="metric-badge badge-purple" style={{ fontSize: '0.6rem', padding: '0.05rem 0.3rem' }}>
+                                  {sop.id}
+                                </span>
+                              ) : null
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )
+                  }
+                  return (
+                    <>
+                      <ShieldAlert size={18} style={{ color: 'var(--error)', flexShrink: 0, marginTop: '2px' }} />
+                      <div style={{ fontSize: '0.8rem' }}>
+                        <strong style={{ color: 'var(--text-primary)' }}>Mismatch Flagged:</strong>
+                        <p style={{ color: 'var(--text-secondary)', marginTop: '0.15rem', lineHeight: '1.3' }}>
+                          {contractMatch?.matchLevel === 'rejected'
+                            ? `Claim of $${(active.claimAmount || 0).toLocaleString()} deviates ${contractMatch.errorMargin}% from contract catalog price (expected $${contractMatch.expectedAmount.toLocaleString()}). Refer to ${applicableSops.join(', ')}.`
+                            : `Carrier logged clean delivery without shortages. Customer claim lacks exception documentation. Rejecting deduction recommended per ${applicableSops.length ? applicableSops.join(', ') : 'SOP-001-R2'}.`
+                          }
+                        </p>
+                        <div style={{ fontSize: '0.65rem', marginTop: '0.25rem', display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+                          {applicableSops.map(sopId => {
+                            const sop = sopRegistry.flatMap(s => s.rules).find(r => r.id === sopId)
+                            return sop ? (
+                              <span key={sopId} className="metric-badge badge-warning" style={{ fontSize: '0.6rem', padding: '0.05rem 0.3rem' }}>
+                                {sop.id}
+                              </span>
+                            ) : null
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )
+                })()}
               </div>
 
               {/* Right Side: Action Workflow buttons */}
@@ -284,8 +375,10 @@ export default function DisputeResolver() {
                         <>
                           <RefreshCw size={12} className="spin-animation" style={{ animation: 'spin 1s linear infinite' }} /> Syncing...
                         </>
-                      ) : active.podStatus === 'mismatch' ? (
+                      ) : active.podStatus === 'mismatch' || contractMatch?.matchLevel === 'rejected' ? (
                         'Override & Approve Credit'
+                      ) : contractMatch?.matchLevel === 'flagged' ? (
+                        'Approve with Flag'
                       ) : (
                         'Auto-Approve Credit Memo'
                       )}

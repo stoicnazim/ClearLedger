@@ -6,6 +6,14 @@ import DiagnosticIntake from './components/DiagnosticIntake'
 import AutonomousInbox from './components/AutonomousInbox'
 import DisputeResolver from './components/DisputeResolver'
 import Shop from './Shop'
+import { useMockDatabase } from './context/MockDatabaseContext'
+
+// Syncs App's simulationRules state into MockDatabaseContext gpoRules
+function GpoSync({ rules }) {
+  const { setGpoRules } = useMockDatabase()
+  useEffect(() => { setGpoRules(rules) }, [rules, setGpoRules])
+  return null
+}
 
 const ADVISORY_COMPONENTS = {
   'AR KPI Dashboard': lazy(() => import('./AR-KPI-Dashboard')),
@@ -186,8 +194,11 @@ export default function App() {
         )}
         
         {activeTab === 'disputes' && (
-          <DisputeResolver />
+          <DisputeResolver simulationRules={simulationRules} />
         )}
+
+        {/* GPO sync: pushes App-level simulationRules into MockDatabaseContext */}
+        <GpoSync rules={simulationRules} />
 
         {/* Advisory Toolkit Workspace */}
         {activeTab === 'advisory' && (
