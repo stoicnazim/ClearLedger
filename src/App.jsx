@@ -34,6 +34,9 @@ const ADVISORY_COMPONENTS = {
   'SSC Transition': lazy(() => import('./ssc-transition-guide')),
   'Technology Selection': lazy(() => import('./Technology-selection-guide')),
   'Treasury & Working Capital': lazy(() => import('./Treasury-working-capital')),
+  'ClearLedger WEBSITE': lazy(() => import('./clearledger-website-v3')),
+  'ClearLedger DIAGNOSTIC': lazy(() => import('./clearledger-diagnostic')),
+  'ClearLedger LEGAL': lazy(() => import('./clearledger-legal')),
 }
 
 class ErrorBoundary extends Component {
@@ -58,6 +61,7 @@ const ADVISORY_CATEGORIES = [
   { name: 'Compliance & Risk', items: ['SOX Compliance', 'E-Invoicing', 'OTC KPI Spec v2'] },
   { name: 'Operations & Transition', items: ['BPO Managed Services', 'SSC Transition', 'Process Mining'] },
   { name: 'Strategy & Planning', items: ['Technology Selection', 'Treasury & Working Capital'] },
+  { name: 'ClearLedger Pages', items: ['ClearLedger WEBSITE', 'ClearLedger DIAGNOSTIC', 'ClearLedger LEGAL'] },
 ]
 
 export default function App() {
