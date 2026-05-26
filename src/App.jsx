@@ -105,81 +105,48 @@ export default function App() {
   return (
     <div className="app-container">
       
+      {/* Premium gradient accent bar */}
+      <div className="accent-bar" />
+
       {/* Top Header Navbar */}
       <header className="navbar">
         <div className="brand-section">
           <div className="brand-logo">CL</div>
           <div>
             <h1 className="brand-name">ClearLedger</h1>
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'block', marginTop: '-2px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>
-              Autonomous OtC Platform
-            </span>
+            <span className="brand-subtitle">Autonomous OtC Platform</span>
           </div>
         </div>
 
         <nav className="nav-links">
-          <button 
-            className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveTab('dashboard')}
-          >
-            <LayoutDashboard size={16} /> Command Center
-          </button>
-          <button 
-            className={`nav-item ${activeTab === 'diagnostic' ? 'active' : ''}`}
-            onClick={() => setActiveTab('diagnostic')}
-          >
-            <FileCheck size={16} /> Diagnostic & Maturity
-          </button>
-          <button 
-            className={`nav-item ${activeTab === 'inbox' ? 'active' : ''}`}
-            onClick={() => setActiveTab('inbox')}
-          >
-            <Mail size={16} /> Autonomous Inbox
-          </button>
-          <button 
-            className={`nav-item ${activeTab === 'disputes' ? 'active' : ''}`}
-            onClick={() => setActiveTab('disputes')}
-          >
-            <FileWarning size={16} /> Dispute Resolver
-          </button>
-          <button 
-            className={`nav-item ${activeTab === 'advisory' ? 'active' : ''}`}
-            onClick={() => setActiveTab('advisory')}
-          >
-            <BookOpen size={16} /> Advisory Library
-          </button>
-          <button 
-            className={`nav-item ${activeTab === 'shop' ? 'active' : ''}`}
-            onClick={() => setActiveTab('shop')}
-          >
-            <Store size={16} /> Shop
-          </button>
-          <button 
-            className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('settings')}
-          >
-            <Settings size={16} /> Control Panel
-          </button>
+          {[
+            { key: 'dashboard', icon: <LayoutDashboard size={16} />, label: 'Command Center' },
+            { key: 'diagnostic', icon: <FileCheck size={16} />, label: 'Diagnostic & Maturity' },
+            { key: 'inbox', icon: <Mail size={16} />, label: 'Autonomous Inbox' },
+            { key: 'disputes', icon: <FileWarning size={16} />, label: 'Dispute Resolver' },
+            { key: 'advisory', icon: <BookOpen size={16} />, label: 'Advisory Library' },
+            { key: 'shop', icon: <Store size={16} />, label: 'Shop' },
+            { key: 'settings', icon: <Settings size={16} />, label: 'Control Panel' },
+          ].map(item => (
+            <button
+              key={item.key}
+              className={`nav-item ${activeTab === item.key ? 'active' : ''}`}
+              onClick={() => setActiveTab(item.key)}
+            >
+              {item.icon} {item.label}
+            </button>
+          ))}
         </nav>
 
         <div className="nav-actions">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', borderRight: '1px solid var(--border-color)', paddingRight: '1rem', marginRight: '0.5rem' }}>
-            <Shield size={14} style={{ color: 'var(--accent-purple)' }} />
-            <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
-              {activeTier} Scale
-            </span>
-            <span style={{
-              fontSize: '0.6rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em',
-              padding: '0.1rem 0.4rem', borderRadius: '3px',
-              background: 'var(--warning-glow)', color: 'var(--warning)',
-              border: '1px solid var(--warning)'
-            }}>
-              Preview
-            </span>
+          <div className="tier-badge">
+            <Shield size={12} style={{ color: 'var(--accent-purple)' }} />
+            <span>{activeTier} Scale</span>
+            <span className="preview-badge">Preview</span>
           </div>
 
           <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle Theme">
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
           </button>
         </div>
       </header>
@@ -314,26 +281,31 @@ export default function App() {
               </div>
             </div>
 
-            {/* Component Render Pane — dark background to support advisory component styles */}
-            <div style={{ 
+            {/* Component Render Pane */}
+            <div className="glass-card" style={{ 
               display: 'flex', 
               flexDirection: 'column', 
-              padding: '1.5rem',
               overflowY: 'auto',
               maxHeight: '650px',
-              background: '#0b0f19',
-              border: '1px solid #1e293b',
-              borderRadius: '12px',
-              color: '#f9fafb'
+              padding: 0,
+              gap: 0
             }}>
-              <div style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.75rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '1.2rem', fontFamily: 'var(--font-title)', color: '#f9fafb' }}>{selectedAdvisory}</h3>
-                <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-mono)' }}>REFERENCE MODEL</span>
+              <div style={{ 
+                borderBottom: '1px solid var(--border-subtle)', 
+                padding: '1rem 1.5rem',
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                background: 'var(--bg-secondary)',
+                borderRadius: '14px 14px 0 0'
+              }}>
+                <h3 style={{ fontSize: '1.1rem', fontFamily: 'var(--font-title)', color: 'var(--text-primary)' }}>{selectedAdvisory}</h3>
+                <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>REFERENCE MODEL</span>
               </div>
               
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: 1, padding: '1.5rem' }}>
                 <ErrorBoundary key={selectedAdvisory}>
-                  <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Loading advisory package...</div>}>
+                  <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)' }}>Loading advisory package...</div>}>
                     <ActiveAdvisoryComponent />
                   </Suspense>
                 </ErrorBoundary>
