@@ -726,10 +726,10 @@ export default function ClearLedgerWebsite({ onStartDiagnostic, onShowLegal }) {
               {/* Inputs */}
               <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
                 {[
-                  { label: "Annual Revenue", val: revenue, set: setRevenue, min: 5, max: 500, suffix: "M€", display: `€${revenue}M` },
+                  { label: "Annual Revenue", val: revenue, set: setRevenue, min: 5, max: 999, suffix: "M€", display: `€${revenue}M` },
                   { label: "Current DSO (Days)", val: dso, set: setDso, min: 25, max: 120, suffix: " days", display: `${dso} days` },
-                  { label: "Monthly Invoice Volume", val: invoiceVol, set: setInvoiceVol, min: 100, max: 50000, suffix: "", display: invoiceVol.toLocaleString() },
-                  { label: "Average FTE Cost (Annual)", val: fteCost, set: setFteCost, min: 25000, max: 120000, suffix: "", display: `€${fteCost.toLocaleString()}` },
+                  { label: "Monthly Invoice Volume", val: invoiceVol, set: setInvoiceVol, min: 100, max: 999999, suffix: "", display: invoiceVol.toLocaleString() },
+                  { label: "Average FTE Cost (Annual)", val: fteCost, set: setFteCost, min: 25000, max: 500000, suffix: "", display: `€${fteCost.toLocaleString()}` },
                 ].map((s, i) => (
                   <div key={i}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
@@ -738,7 +738,7 @@ export default function ClearLedgerWebsite({ onStartDiagnostic, onShowLegal }) {
                     </div>
                     <input type="range" min={s.min} max={s.max} value={s.val}
                       onChange={e => s.set(Number(e.target.value))}
-                      style={{ width: "100%" }}
+                      style={{ width: "100%", background: `linear-gradient(to right, ${C.accent} 0%, ${C.accent} ${((s.val - s.min) / (s.max - s.min)) * 100}%, rgba(255,255,255,0.08) ${((s.val - s.min) / (s.max - s.min)) * 100}%, rgba(255,255,255,0.08) 100%)` }}
                     />
                   </div>
                 ))}
