@@ -1,0 +1,107 @@
+Session Summary — May 27, 2026
+===============================
+
+1. AR-KPI-DASHBOARD REWRITE (REVERTED)
+---------------------------------------
+- Rewrote AR-KPI-Dashboard.jsx to use live KPI Engine data and seedDatabase
+  instead of hardcoded fantasy numbers
+- Made regional bar charts clickable with cross-filtering to overdue customer
+  list in live gate
+- User didn't like the result → reverted to original hardcoded dashboard
+- Commit reverted: afbaa91
+
+2. THREE NEW PAGES ADDED
+-------------------------
+- User added 3 new files to the repo:
+  - src/clearledger-website-v3.jsx (933 lines) — full marketing website
+  - src/clearledger-diagnostic.jsx (975 lines) — APQC-aligned OTC maturity assessment
+  - src/clearledger-legal.jsx (327 lines) — legal/privacy pages
+- Committed as-is: bdd6a88
+
+3. WIRING IN APP.JSX (ITERATION 1 — REVERTED)
+----------------------------------------------
+- Added the 3 files as sidebar ADVISORY_COMPONENTS — incorrect
+- Build passed but user said "you got it wrong"
+- Committed: 06f7d6f
+
+4. CORRECT INTEGRATION (CLEARLEDGER WEBSITE AS MAIN APP)
+---------------------------------------------------------
+- Rewrote App.jsx as a routing shell: page state manages 'website' | 'diagnostic' | 'legal'
+- ClearLedgerWebsite is the default rendered view
+- Added onStartDiagnostic prop to website: nav, hero, and mobile "Start Diagnostic"
+  buttons open the assessment tool
+- Added onShowLegal prop: footer legal links (Privacy/Terms/Cookies) navigate to
+  LegalPages with the correct tab
+- Added onClose prop to ClearLedgerDiagnostic and LegalPages for back navigation
+- Committed: 89ed217
+
+5. REMOVED PRE-LAUNCH LANDING PAGE
+-----------------------------------
+- Removed LandingPage pre-launch screen from main.jsx
+- Deleted LandingPage.jsx (no longer imported)
+- App now starts directly on ClearLedgerWebsite
+- Committed: 01a292c
+
+6. APQC VERSION ALIGNMENT
+--------------------------
+- Changed all APQC PCF v7.4 refs → v8.0 across the codebase
+- Updated in clearledger-website-v3.jsx (3 spots) and clearledger-diagnostic.jsx (1 spot)
+- Committed: 01a292c
+
+7. REMOVED EMPLOYEE SWEET SPOT & COMPANY SIZE RANGE
+-----------------------------------------------------
+- Removed "10–1,000 Employee sweet spot" stat from hero badge bar
+- Changed comparison table from "Growing companies (10 – 1,000)" to "All company sizes"
+- Committed: 27d2686
+
+8. ROI SLIDER RANGE EXPANSION & FILL GRADIENT
+-----------------------------------------------
+- Revenue slider: max 500 → 999M
+- Monthly invoice volume: max 50,000 → 999,999
+- Average FTE cost: max 120,000 → 500,000
+- Added accent-colored fill gradient to slider track (matches thumb color)
+- Committed: 8150534
+
+9. MIGRATION TO NEXT.JS
+-------------------------
+- User migrated from Vite to Next.js 15 with App Router
+- New app/ directory structure:
+  / (home)      → app/page.js → ClearLedgerWebsite
+  /diagnostic/  → app/diagnostic/page.js → ClearLedgerDiagnostic
+  /legal/       → app/legal/page.js → LegalPages
+  /products/    → app/products/page.js → ClearLedgerProducts
+  /robots.txt   → app/robots.js
+  /sitemap.xml  → app/sitemap.js
+- Applied same fixes to the new app/ copies:
+  - APQC v7.4 → v8.0 (layout metadata, website, diagnostic)
+  - Start Diagnostic buttons → /diagnostic/
+  - Footer legal links → /legal/?tab=privacy|terms|cookies
+  - Removed employee sweet spot + company size range
+  - ROI slider ranges + fill gradient
+- Fixed sitemap.js / robots.js: added force-static for static export
+- Updated vercel.json: output → out/, framework → null
+- Added .next/ and out/ to .gitignore
+- Installed Next.js deps, resolved peer dependency warnings
+- Build: 6 static pages generated
+- SOP rule integrations added to process packs by user:
+  - Cash-app, billing, credit, dispute process packs get SOP badge sections
+  - DisputeResolver gets GPO Override toggle
+  - AutonomousInbox upgraded with contract catalog matching
+  - DiagnosticIntake refactored to useMemo + rule engine evaluation
+  - New SOP-008 through SOP-011 (treasury, risk, commercial, compliance)
+
+COMMITS (chronological)
+------------------------
+bdd6a88 — Initial add of 3 new files (website-v3, diagnostic, legal)
+06f7d6f — Incorrect wiring as sidebar items
+89ed217 — Correct integration: website as main app with routing
+01a292c — Removed landing page, aligned APQC v7.4→v8.0
+27d2686 — Removed employee sweet spot + company size range
+8150534 — ROI slider ranges + fill gradient
+271ae28 — Next.js migration with all fixes applied
+
+Latest commit: 271ae28 on main (pushed to GitHub)
+
+VERCEL
+-------
+Deploys automatically from main branch.
