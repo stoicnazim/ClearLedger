@@ -1,6 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { CheckCircle2, ChevronRight, AlertTriangle, Lightbulb, Play, ClipboardList, Info, ShieldCheck, BookOpen } from 'lucide-react'
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts'
+import { useMockDatabase } from '../context/MockDatabaseContext'
+import { evaluateRules } from '../ruleEngine'
 
 export default function DiagnosticIntake({ activeTier, onTierChange, onNavigate }) {
   const [scores, setScores] = useState({
@@ -42,66 +44,63 @@ export default function DiagnosticIntake({ activeTier, onTierChange, onNavigate 
     setScores(prev => ({ ...prev, [domain]: val }))
   }
 
-  // Dynamic Gap-to-SOX control mapper
-  const getGapsAndWins = () => {
+  // Map domains to SOP categories and recommendation templates
+  const DOMAIN_SOP_CONFIG = [
+    { id: 'cashApp', domain: 'Cash Application', categories: ['cash_app', 'governance'], severity: 'Critical',
+      gap: 'Remittance details are manually entered from bank portals, causing delayed cash allocation and dunning noise.',
+      win: 'Deploy the Autonomous Cash App agent to auto-fetch remittances and reach 90%+ match rates.',
+      soxControl: 'OTC-12 (Cash Application Segregation & Matching)', advisoryTab: 'Cash Application', agentTab: 'inbox',
+      context: (s) => ({ amountWithinThreshold: s <= 2, singleInvoice: false, partialMatch: true }) },
+    { id: 'disputes', domain: 'Dispute Resolution', categories: ['dispute', 'pricing'], severity: 'High',
+      gap: 'Disputes sit idle due to manual retrieval of Proof of Deliveries (PODs) and shipment invoices.',
+      win: 'Trigger the Deductions Resolver to pull PODs from carriers and match claims side-by-side.',
+      soxControl: 'OTC-13 (Customer Dispute Investigations)', advisoryTab: 'Dispute Resolution', agentTab: 'disputes',
+      context: (s) => ({ podVerified: false, claimWithinThreshold: false, contractMismatch: true }) },
+    { id: 'collections', domain: 'Collections Strategy', categories: ['collections'], severity: 'Medium',
+      gap: 'Collectors chase payments based on legacy spreadsheet lists without risk-segmentation.',
+      win: 'Incorporate active dynamic risk profiling to prioritize transactional vs strategic accounts.',
+      soxControl: 'OTC-09 (Collection Activity & Dunning Escalations)', advisoryTab: 'Collections Strategy', agentTab: 'inbox',
+      context: (s) => ({ earlyStage: false, escalationDue: true, dpdOver45: true, noPtp: true }) },
+    { id: 'credit', domain: 'Credit & Risk', categories: ['credit', 'risk'], severity: 'Medium',
+      gap: 'Credit evaluations are delayed or run ad-hoc without structured portfolio exposure aggregation.',
+      win: 'Implement rating-based scoring rules and standardized approval chains.',
+      soxControl: 'OTC-02 (Customer Credit Evaluations)', advisoryTab: 'Credit Management', agentTab: 'settings',
+      context: (s) => ({ increaseUnder10pct: false, lowRisk: false, increaseOver25pct: true, autoDowngradeTrigger: true }) },
+    { id: 'compliance', domain: 'SOX & Compliance', categories: ['compliance', 'governance'], severity: 'High',
+      gap: 'Compliance controls rely on manual evidence collection with no automated SOX audit trail.',
+      win: 'Enable continuous controls monitoring with automated evidence capture for all SOX-relevant transactions.',
+      soxControl: 'OTC-17 (Model Governance & Audit Trail)', advisoryTab: 'SOX Compliance', agentTab: 'settings',
+      context: (s) => ({ xmlSchemaValid: false, quarterlyAuditDue: true, localMandateSchemaValid: false, soxEvidenceComplete: false }) },
+    { id: 'billing', domain: 'Billing & Invoicing', categories: ['compliance'], severity: 'Medium',
+      gap: 'Invoice delivery and format compliance rely on manual checks, causing rework cycles and late payments.',
+      win: 'Implement automated e-invoicing compliance validation per local mandate before customer submission.',
+      soxControl: 'OTC-05 (Billing & Invoice Accuracy)', advisoryTab: 'Billing & Invoicing', agentTab: 'inbox',
+      context: (s) => ({ xmlSchemaValid: false, crossBorderEU: s <= 1, skuFound: false }) },
+  ]
+
+  const { sopRegistry } = useMockDatabase()
+
+  const gaps = useMemo(() => {
     const list = []
-    
-    if (scores.cashApp <= 2) {
-      list.push({
-        id: 'cash',
-        domain: 'Cash Application',
-        severity: 'Critical',
-        gap: 'Remittance details are manually entered from bank portals, causing delayed cash allocation and dunning noise.',
-        win: 'Deploy the Autonomous Cash App agent to auto-fetch remittances and reach 90%+ match rates.',
-        soxControl: 'OTC-12 (Cash Application Segregation & Matching)',
-        advisoryTab: 'Cash Application',
-        agentTab: 'inbox'
-      })
+    for (const cfg of DOMAIN_SOP_CONFIG) {
+      if (scores[cfg.id] <= 2) {
+        const ctx = cfg.context(scores[cfg.id])
+        const matched = evaluateRules(sopRegistry, cfg.categories, ctx)
+        list.push({
+          id: cfg.id,
+          domain: cfg.domain,
+          severity: cfg.severity,
+          gap: cfg.gap,
+          win: matched.length > 0 ? `${matched[0].description} — ${cfg.win}` : cfg.win,
+          soxControl: cfg.soxControl,
+          advisoryTab: cfg.advisoryTab,
+          agentTab: cfg.agentTab,
+          sopRefs: matched.map(r => r.id),
+        })
+      }
     }
-    
-    if (scores.disputes <= 2) {
-      list.push({
-        id: 'disputes',
-        domain: 'Dispute Resolution',
-        severity: 'High',
-        gap: 'Disputes sit idle due to manual retrieval of Proof of Deliveries (PODs) and shipment invoices.',
-        win: 'Trigger the Deductions Resolver to pull PODs from carriers and match claims side-by-side.',
-        soxControl: 'OTC-13 (Customer Dispute Investigations)',
-        advisoryTab: 'Dispute Resolution',
-        agentTab: 'disputes'
-      })
-    }
-    
-    if (scores.collections <= 2) {
-      list.push({
-        id: 'coll',
-        domain: 'Collections Strategy',
-        severity: 'Medium',
-        gap: 'Collectors chase payments based on legacy spreadsheet lists without risk-segmentation.',
-        win: 'Incorporate active dynamic risk profiling to prioritize transactional vs strategic accounts.',
-        soxControl: 'OTC-09 (Collection Activity & Dunning Escalations)',
-        advisoryTab: 'Collections Strategy',
-        agentTab: 'inbox'
-      })
-    }
-
-    if (scores.credit <= 2) {
-      list.push({
-        id: 'credit',
-        domain: 'Credit & Risk',
-        severity: 'Medium',
-        gap: 'Credit evaluations are delayed or run ad-hoc without structured portfolio exposure aggregation.',
-        win: 'Implement rating-based scoring rules and standardized approval chains.',
-        soxControl: 'OTC-02 (Customer Credit Evaluations)',
-        advisoryTab: 'Credit Management',
-        agentTab: 'settings' // GPO configuration
-      })
-    }
-
     return list
-  }
-
-  const gaps = getGapsAndWins()
+  }, [scores, sopRegistry])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -280,9 +279,16 @@ export default function DiagnosticIntake({ activeTier, onTierChange, onNavigate 
                   <p style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem' }}>
                     <Lightbulb size={14} style={{ color: 'var(--warning)' }} /> <strong>Quick Win:</strong> {gap.win}
                   </p>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--accent-purple)', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: '600' }}>
-                    <ShieldCheck size={12} /> Compliance Control Target: {gap.soxControl}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--accent-purple)', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: '600' }}>
+                      <ShieldCheck size={12} /> {gap.soxControl}
+                    </span>
+                    {gap.sopRefs?.map(ref => (
+                      <span key={ref} className="metric-badge badge-purple" style={{ fontSize: '0.55rem', padding: '0.05rem 0.25rem' }}>
+                        {ref}
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>

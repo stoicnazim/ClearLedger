@@ -10,6 +10,7 @@ export default function DisputeResolver({ simulationRules }) {
   const [isResolving, setIsResolving] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [overrideActive, setOverrideActive] = useState(false)
 
   // Filter queue based on search term and status pill selected
   const filteredDisputes = disputes.filter(disp => {
@@ -44,9 +45,8 @@ export default function DisputeResolver({ simulationRules }) {
   const ruleContext = active ? {
     podVerified: active.podStatus === 'verified',
     claimWithinThreshold: (active.claimAmount || 0) <= effectiveRules.autoApproveThreshold,
-    contractMismatch: contractMatch?.matchLevel === 'rejected',
-    overrideApproved: false,
-    amountWithinThreshold: (active.claimAmount || 0) <= effectiveRules.autoApproveThreshold,
+    contractMismatch: contractMatch?.matchLevel === 'flagged' || contractMatch?.matchLevel === 'rejected',
+    overrideApproved: overrideActive,
     skuFound: !!(active.sku && contractCatalog[active.sku]),
     errorUnder3pct: contractMatch?.matchLevel === 'approved',
     errorOver10pct: contractMatch?.matchLevel === 'rejected',
@@ -331,6 +331,19 @@ export default function DisputeResolver({ simulationRules }) {
 
               {/* Right Side: Action Workflow buttons */}
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '110px', boxSizing: 'border-box' }}>
+                {active.status === 'pending' && (
+                  <button
+                    onClick={() => setOverrideActive(!overrideActive)}
+                    style={{
+                      alignSelf: 'flex-end', background: 'transparent', border: 'none',
+                      fontSize: '0.6rem', color: overrideActive ? 'var(--warning)' : 'var(--text-muted)',
+                      cursor: 'pointer', fontWeight: 600, marginBottom: '0.25rem',
+                      display: 'flex', alignItems: 'center', gap: '0.2rem',
+                    }}
+                  >
+                    {overrideActive ? '✓ GPO Override Active' : 'GPO Override'}
+                  </button>
+                )}
                 {active.status !== 'pending' ? (
                   <div style={{
                     backgroundColor: active.status === 'approved' ? 'var(--success-glow)' : 'var(--error-glow)',

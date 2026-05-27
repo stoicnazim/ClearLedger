@@ -4,7 +4,7 @@ import { useMockDatabase } from '../context/MockDatabaseContext'
 import { evaluateRules } from '../ruleEngine'
 
 export default function AutonomousInbox({ activeTier, simulationRules }) {
-  const { invoices, applyRemittance, resolveDisputeAction, addLog, addDecisionLog, sopRegistry, gpoRules } = useMockDatabase()
+  const { invoices, disputes, customers, applyRemittance, resolveDisputeAction, addLog, addDecisionLog, sopRegistry, gpoRules, contractCatalog } = useMockDatabase()
   const effectiveRules = simulationRules || gpoRules
 
   // Fallback defaults if parent doesn't pass simulationRules yet
@@ -68,24 +68,33 @@ export default function AutonomousInbox({ activeTier, simulationRules }) {
   const matchedRules = useMemo(() => {
     if (!activeEmail) return []
     const e = activeEmail
+    const invId = Array.isArray(e.entities.invoice) ? e.entities.invoice[0] : e.entities.invoice
+    const inv = invoices.find(i => i.id === invId)
+    const cust = inv ? customers.find(c => c.id === inv.customerId) : null
+    const isEU = cust?.region === 'EU'
+    const isComplianceCat = e.category === 'compliance'
+    const skuCode = e.entities.code?.startsWith('CL-') ? e.entities.code : inv?.sku
+    const contractPrice = skuCode ? contractCatalog[skuCode]?.basePrice : 0
+    const claimedAmt = e.entities.claimedAmount || 0
+    const expectedAmt = contractPrice > 0 ? contractPrice * 1 : 0
+    const errMargin = expectedAmt > 0 ? Math.abs(claimedAmt - expectedAmt) / expectedAmt * 100 : null
     const ctx = {
-      claimWithinThreshold: e.entities.claimedAmount <= rules.autoApproveThreshold,
-      amountWithinThreshold: e.entities.claimedAmount <= rules.autoApproveThreshold,
-      podVerified: e.category === 'dispute' && e.status === 'pending',
-      contractMismatch: false,
-      overrideApproved: false,
+      claimWithinThreshold: claimedAmt <= rules.autoApproveThreshold,
+      podVerified: e.category === 'dispute',
       singleInvoice: !Array.isArray(e.entities.invoice),
       multiInvoice: Array.isArray(e.entities.invoice),
-      exactMatch: e.category === 'cash_app',
-      partialMatch: e.category === 'cash_app' && e.entities.claimedAmount > 0,
-      xmlSchemaValid: e.category !== 'compliance',
-      crossBorderEU: false,
-      skuFound: false,
-      errorUnder3pct: false,
-      errorOver10pct: false,
+      exactMatch: e.category === 'cash_app' && !isComplianceCat,
+      partialMatch: e.category === 'cash_app' && claimedAmt > 0,
+      xmlSchemaValid: !isComplianceCat,
+      crossBorderEU: isEU,
+      skuFound: !!skuCode && !!contractCatalog[skuCode],
+      errorUnder3pct: errMargin !== null && errMargin < 3,
+      errorOver10pct: errMargin !== null && errMargin > 10,
+      contractMismatch: errMargin !== null && errMargin > 10,
+      overrideApproved: false,
     }
     return evaluateRules(sopRegistry, [e.category === 'dispute' ? 'dispute' : e.category === 'cash_app' ? 'cash_app' : 'compliance', 'governance'], ctx)
-  }, [activeEmail, rules, sopRegistry])
+  }, [activeEmail, rules, sopRegistry, invoices, customers, contractCatalog])
 
   // Regex parser simulating LLM entity extraction
   const runNLPExtractor = (body, sender, subject) => {

@@ -120,6 +120,50 @@ export const SOP_REGISTRY = [
       { id: 'SOP-007-R3', description: 'Reject deduction when error margin exceeds 10% of contract price', condition: { errorOver10pct: true }, action: 'reject', priority: 2 },
     ]
   },
+  {
+    id: 'SOP-008', version: '1.0', effectiveDate: '2026-05-15',
+    title: 'Cash Forecasting & Liquidity Management',
+    category: 'treasury',
+    rules: [
+      { id: 'SOP-008-R1', description: 'Alert Treasury when 13-week cash forecast accuracy falls below 85%', condition: { forecastAccuracyLow: true }, action: 'alert_treasury', priority: 1 },
+      { id: 'SOP-008-R2', description: 'Maintain intraday liquidity buffer > forecast outflows × 1.2 multiplier', condition: { bufferBelowThreshold: true }, action: 'increase_buffer', priority: 2 },
+      { id: 'SOP-008-R3', description: 'Accelerate SCF program drawdown when DSO > 45 and CCC trending upward', condition: { dsoElevated: true, cccWorsening: true }, action: 'scf_drawdown', priority: 3 },
+      { id: 'SOP-008-R4', description: 'Flag cross-entity cash concentration opportunity when netting benefit > 5% of local balance', condition: { nettingOpportunity: true }, action: 'recommend_sweep', priority: 4 },
+    ]
+  },
+  {
+    id: 'SOP-009', version: '1.0', effectiveDate: '2026-05-15',
+    title: 'Credit Scoring & Risk Tier Calibration',
+    category: 'risk',
+    rules: [
+      { id: 'SOP-009-R1', description: 'Trigger credit score recalibration when portfolio default rate shifts > 15%', condition: { defaultRateShift: true }, action: 'recalibrate_model', priority: 1 },
+      { id: 'SOP-009-R2', description: 'Auto-downgrade customer tier when DPD > 60 and credit utilization > 85%', condition: { autoDowngradeTrigger: true }, action: 'downgrade_tier', priority: 2 },
+      { id: 'SOP-009-R3', description: 'Place account on watchlist when payment trend deteriorates for 2+ consecutive periods', condition: { trendDeteriorating: true }, action: 'add_watchlist', priority: 3 },
+      { id: 'SOP-009-R4', description: 'Generate risk exposure report for Credit Committee quarterly', condition: { quarterlyReportDue: true }, action: 'generate_exposure_report', priority: 5 },
+    ]
+  },
+  {
+    id: 'SOP-010', version: '1.0', effectiveDate: '2026-06-01',
+    title: 'Commercial Policy & Trade Terms Governance',
+    category: 'commercial',
+    rules: [
+      { id: 'SOP-010-R1', description: 'Verify trade promotion deduction against approved promo master before auto-approving', condition: { promoCodeValid: true, deductionWithinPromoLimit: true }, action: 'auto_approve_promo', priority: 1 },
+      { id: 'SOP-010-R2', description: 'Flag rebate claims exceeding 5% of annual customer revenue for audit', condition: { rebateThresholdExceeded: true }, action: 'flag_for_audit', priority: 2 },
+      { id: 'SOP-010-R3', description: 'Block unapproved trade terms deviation > 2% from standard terms matrix', condition: { termsDeviationExceeded: true, overrideApproved: false }, action: 'block_apply_standard', priority: 1 },
+      { id: 'SOP-010-R4', description: 'Route MDF/co-op marketing fund claims through proof-of-performance verification', condition: { mdfClaim: true }, action: 'require_por', priority: 3 },
+    ]
+  },
+  {
+    id: 'SOP-011', version: '1.0', effectiveDate: '2026-06-01',
+    title: 'Tax & Regulatory Compliance Mandate',
+    category: 'compliance',
+    rules: [
+      { id: 'SOP-011-R1', description: 'Validate cross-border withholding tax rate before processing non-resident payments', condition: { crossBorderPayment: true, withholdingTaxValidated: false }, action: 'hold_withholding', priority: 1 },
+      { id: 'SOP-011-R2', description: 'Ensure e-invoice schema matches local mandate (SDI/KSeF/Peppol/ZATCA) per country', condition: { localMandateSchemaValid: false }, action: 'reject_convert', priority: 1 },
+      { id: 'SOP-011-R3', description: 'Maintain SOX control evidence trail for all manual journal entries > $5K', condition: { manualJournalOver5K: true, soxEvidenceComplete: false }, action: 'request_evidence', priority: 2 },
+      { id: 'SOP-011-R4', description: 'Flag transactions touching sanctioned jurisdictions for compliance block', condition: { sanctionsFlagged: true }, action: 'compliance_block', priority: 1 },
+    ]
+  },
 ]
 
 export const SKU_CATALOG = {

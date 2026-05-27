@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMockDatabase } from "./context/MockDatabaseContext";
+import { evaluateRules } from "./ruleEngine";
 
 /* ─────────────────────────────────────────────────
    2.1 — Credit Management Process Pack
@@ -546,7 +547,7 @@ const raciText = (v) => { if (v === "I") return "rgba(255,255,255,0.35)"; return
 const stepTypeColor = (t, accent) => { if (t === "start") return "#34D399"; if (t === "end") return "#EF4444"; if (t === "decision") return "#FBBF24"; if (t === "system") return "#60A5FA"; return accent; };
 
 export default function CreditManagementProcessPack() {
-  const { derived, customers, creditProfiles, invoices } = useMockDatabase() || {};
+  const { derived, customers, creditProfiles, invoices, sopRegistry } = useMockDatabase() || {};
   const liveDb = { creditProfiles, invoices, customers };
   const [tier, setTier] = useState("mid");
   const [tab, setTab] = useState("sipoc");
@@ -555,6 +556,13 @@ export default function CreditManagementProcessPack() {
 
   const currentTier = TIERS.find((t) => t.key === tier);
   const accent = currentTier.accent;
+
+  const matchedRules = evaluateRules(sopRegistry || [], 'credit', { increaseUnder10pct: true, lowRisk: true });
+  const sopGroups = {};
+  matchedRules.forEach(r => {
+    if (!sopGroups[r.sopId]) sopGroups[r.sopId] = { title: r.sopTitle, version: r.sopVersion, rules: [] };
+    sopGroups[r.sopId].rules.push(r);
+  });
 
   /* ── SIPOC ──────────────────────────────── */
   const renderSIPOC = () => {
@@ -812,6 +820,36 @@ export default function CreditManagementProcessPack() {
         <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", fontFamily: "'JetBrains Mono', monospace" }}>APQC PCF v8.0 · Hackett World-Class Metrics 2026 · IFRS 9 / CECL / ECL Standards</span>
         <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", fontFamily: "'JetBrains Mono', monospace" }}>2.1 — Credit Management Process Pack · v1.0</span>
       </div>
+
+      {Object.keys(sopGroups).length > 0 && (
+        <div style={{ marginTop: 20, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 16 }}>
+          <div style={{ borderLeft: `2px solid ${accent}`, padding: "16px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: accent, marginBottom: 12, textTransform: "uppercase", letterSpacing: 1, fontFamily: "'JetBrains Mono', monospace" }}>
+              ⚖ Governing SOP Protocols
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+              {Object.keys(sopGroups).map(sopId => {
+                const info = sopGroups[sopId];
+                return (
+                  <div key={sopId} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "12px 16px", minWidth: 240 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: accent, marginBottom: 4, fontFamily: "'JetBrains Mono', monospace" }}>
+                      {sopId} <span style={{ color: "rgba(255,255,255,0.35)", fontWeight: 400 }}>v{info.version}</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", marginBottom: 8, fontFamily: "'DM Sans', sans-serif" }}>{info.title}</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                      {info.rules.map(r => (
+                        <span key={r.id} style={{ background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.75)", padding: "2px 8px", borderRadius: 4, fontSize: 9, fontFamily: "'JetBrains Mono', monospace" }}>
+                          {r.id} · {r.action.replace(/_/g, ' ')}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
