@@ -294,12 +294,12 @@ export default function ClearLedgerWebsite() {
     { dim: "Price Range", big4: "€150K – 500K+", saas: "€5K – 50K/yr (license only)", us: "€5K – 80K (fixed scope)" },
     { dim: "What You Get", big4: "PowerPoint recommendations", saas: "A tool with no implementation help", us: "Working frameworks + implementation roadmap" },
     { dim: "Timeline", big4: "6–12 months", saas: "3–6 months to deploy", us: "2 weeks – 6 months" },
-    { dim: "Company Size Fit", big4: "Enterprise only (1,000+)", saas: "Mid-market (200+)", us: "All company sizes" },
+    { dim: "Company Size Fit", big4: "Enterprise only (1,000+)", saas: "Mid-market (200+)", us: "Growing companies (10 – 1,000)" },
     { dim: "After Engagement", big4: "Consultant dependency", saas: "Vendor lock-in", us: "Self-sufficient team + reusable tools" },
   ];
 
   const proofPoints = [
-    { metric: "20+", label: "Analytical modules in our OtC toolkit", sub: "APQC PCF v7.4 aligned" },
+    { metric: "20+", label: "Analytical modules in our OtC toolkit", sub: "APQC PCF v8.0 aligned" },
     { metric: "8", label: "OtC domains covered end-to-end", sub: "Order Mgmt → Cash Application" },
     { metric: "45", label: "KPIs tracked with benchmark data", sub: "Tier-adjusted targets" },
     { metric: "3", label: "Industry vertical packs", sub: "CPG · Manufacturing · Services" },
@@ -440,6 +440,7 @@ export default function ClearLedgerWebsite() {
                   {[
                     { val: "APQC PCF v8.0", sub: "Framework aligned" },
                     { val: "20+ Modules", sub: "Analytical toolkit" },
+                    { val: "10–1,000", sub: "Employee sweet spot" },
                   ].map((s, i) => (
                     <div key={i}>
                       <div style={{ fontFamily: C.mono, fontSize: "13px", color: C.accent, fontWeight: 600 }}>{s.val}</div>
@@ -725,10 +726,10 @@ export default function ClearLedgerWebsite() {
               {/* Inputs */}
               <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
                 {[
-                  { label: "Annual Revenue", val: revenue, set: setRevenue, min: 5, max: 999, suffix: "M€", display: `€${revenue}M` },
+                  { label: "Annual Revenue", val: revenue, set: setRevenue, min: 5, max: 500, suffix: "M€", display: `€${revenue}M` },
                   { label: "Current DSO (Days)", val: dso, set: setDso, min: 25, max: 120, suffix: " days", display: `${dso} days` },
-                  { label: "Monthly Invoice Volume", val: invoiceVol, set: setInvoiceVol, min: 100, max: 999999, suffix: "", display: invoiceVol.toLocaleString() },
-                  { label: "Average FTE Cost (Annual)", val: fteCost, set: setFteCost, min: 25000, max: 500000, suffix: "", display: `€${fteCost.toLocaleString()}` },
+                  { label: "Monthly Invoice Volume", val: invoiceVol, set: setInvoiceVol, min: 100, max: 50000, suffix: "", display: invoiceVol.toLocaleString() },
+                  { label: "Average FTE Cost (Annual)", val: fteCost, set: setFteCost, min: 25000, max: 120000, suffix: "", display: `€${fteCost.toLocaleString()}` },
                 ].map((s, i) => (
                   <div key={i}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
@@ -737,7 +738,7 @@ export default function ClearLedgerWebsite() {
                     </div>
                     <input type="range" min={s.min} max={s.max} value={s.val}
                       onChange={e => s.set(Number(e.target.value))}
-                      style={{ width: "100%", background: `linear-gradient(to right, ${C.accent} 0%, ${C.accent} ${((s.val - s.min) / (s.max - s.min)) * 100}%, rgba(255,255,255,0.08) ${((s.val - s.min) / (s.max - s.min)) * 100}%, rgba(255,255,255,0.08) 100%)` }}
+                      style={{ width: "100%" }}
                     />
                   </div>
                 ))}

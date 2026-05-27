@@ -1,5 +1,5 @@
-const BASE_URL = 'https://clearledger.app';
 export const dynamic = 'force-static';
+const BASE_URL = 'https://clearledger.app';
 export default function sitemap() {
   return [
     { url: `${BASE_URL}/`, lastModified: new Date(), changeFrequency: 'weekly', priority: 1.0 },
