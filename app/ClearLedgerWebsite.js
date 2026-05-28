@@ -798,10 +798,9 @@ export default function ClearLedgerWebsite() {
                   display: "flex", alignItems: "center", justifyContent: "center",
                   maxHeight: "400px", overflow: "hidden",
                 }}>
-                  <div style={{ textAlign: "center", padding: "40px" }}>
-                    <div style={{ fontFamily: C.serif, fontSize: "64px", color: C.accent, marginBottom: "8px" }}>NB</div>
-                    <div style={{ fontFamily: C.mono, fontSize: "10px", color: C.textDim, letterSpacing: "2px", textTransform: "uppercase" }}>Photo placeholder</div>
-                  </div>
+                  <img src="/Headshot.jpg" alt="Nazim Boukhouf, founder of ClearLedger" style={{
+                    width: "100%", height: "100%", objectFit: "cover",
+                  }} />
                 </div>
               </div>
             </Reveal>
