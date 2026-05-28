@@ -940,7 +940,7 @@ export default function ClearLedgerDiagnostic() {
               Book a 30-minute call to walk through your results and discuss next steps. No obligation, no pitch — just a frank conversation about your OtC process.
             </p>
             <div style={{ display: "flex", justifyContent: "center", gap: "14px", flexWrap: "wrap" }}>
-              <a href="https://clearledger.app" style={{
+              <a href="https://a1ttvahfc4.calendesk.net" target="_blank" rel="noopener noreferrer" style={{
                 padding: "14px 32px", borderRadius: C.radiusSm, textDecoration: "none",
                 background: `linear-gradient(135deg, ${C.accent}, ${C.accentDark})`,
                 color: "white", fontFamily: C.sans, fontSize: "14px", fontWeight: 500,

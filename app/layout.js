@@ -1,9 +1,13 @@
 import './globals.css';
 
 export const metadata = {
+  metadataBase: new URL('https://clearledger.com'),
   title: { default: 'ClearLedger — Autonomous OtC Platform for SSC, BPO & GBS', template: '%s | ClearLedger' },
   description: 'APQC PCF v8.0-aligned AR maturity diagnostic, process packs, and Order-to-Cash advisory for shared service centers and business process outsourcers.',
   keywords: ['accounts receivable', 'order to cash', 'SSC', 'BPO', 'GBS', 'AR automation', 'APQC', 'shared services', 'cash application', 'dispute resolution', 'OtC consulting', 'fractional CFO'],
+  twitter: { card: 'summary_large_image', title: 'ClearLedger — Autonomous OtC Platform', description: 'APQC-aligned AR diagnostic, process packs, and OtC advisory for SSC, BPO & GBS teams.' },
+  robots: { index: true, follow: true },
+  icons: { icon: '/favicon.svg' },
   openGraph: {
     title: 'ClearLedger — Autonomous OtC Platform',
     description: 'APQC-aligned AR diagnostic, process packs, and OtC advisory for SSC, BPO & GBS teams.',
@@ -11,10 +15,8 @@ export const metadata = {
     siteName: 'ClearLedger',
     type: 'website',
     locale: 'en_US',
+    images: [{ url: '/og-image.svg', width: 1200, height: 630 }],
   },
-  twitter: { card: 'summary_large_image', title: 'ClearLedger — Autonomous OtC Platform', description: 'APQC-aligned AR diagnostic, process packs, and OtC advisory for SSC, BPO & GBS teams.' },
-  robots: { index: true, follow: true },
-  icons: { icon: '/favicon.svg' },
   other: { 'theme-color': '#08090E' },
 };
 
