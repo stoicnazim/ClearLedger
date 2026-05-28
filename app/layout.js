@@ -1,7 +1,7 @@
 import './globals.css';
 
 export const metadata = {
-  metadataBase: new URL('https://clearledger.com'),
+  metadataBase: new URL('https://clearledger.app'),
   title: { default: 'ClearLedger — Autonomous OtC Platform for SSC, BPO & GBS', template: '%s | ClearLedger' },
   description: 'APQC PCF v8.0-aligned AR maturity diagnostic, process packs, and Order-to-Cash advisory for shared service centers and business process outsourcers.',
   keywords: ['accounts receivable', 'order to cash', 'SSC', 'BPO', 'GBS', 'AR automation', 'APQC', 'shared services', 'cash application', 'dispute resolution', 'OtC consulting', 'fractional CFO'],
