@@ -6,6 +6,7 @@ const C = {
   bgCard: "#0D1117",
   bgCard2: "#131A2B",
   surface: "#161D2F",
+  surfaceHover: "#1A2335",
   border: "rgba(255,255,255,0.06)",
   borderHover: "rgba(255,255,255,0.12)",
   text: "#E8E6F0",
@@ -15,7 +16,9 @@ const C = {
   accentBright: "#8677F0",
   accentDark: "#5A4BD6",
   accentGlow: "rgba(107,92,231,0.12)",
-  accentGlow2: "rgba(107,92,231,0.25)",
+  accentGlow2: "rgba(107,92,231,0.35)",
+  accentGradient: "linear-gradient(135deg, #6B5CE7, #4FC3F7)",
+  glassBg: "rgba(13,17,23,0.85)",
   cyan: "#4FC3F7",
   cyanDim: "rgba(79,195,247,0.1)",
   green: "#3DDC84",
@@ -63,6 +66,8 @@ const MeshBG = () => {
       { x: 0.75, y: 0.45, r: 200, c: [79, 195, 247] },
       { x: 0.5, y: 0.75, r: 180, c: [61, 220, 132] },
       { x: 0.15, y: 0.65, r: 150, c: [107, 92, 231] },
+      { x: 0.85, y: 0.15, r: 170, c: [79, 195, 247] },
+      { x: 0.35, y: 0.55, r: 160, c: [61, 220, 132] },
     ];
 
     const resize = () => {
@@ -168,7 +173,7 @@ const DashboardPreview = () => {
       padding: "20px",
       width: "340px",
       maxWidth: "100%",
-      boxShadow: `0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px ${C.border}`,
+      boxShadow: `0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px ${C.border}, 0 8px 32px rgba(107,92,231,0.15)`,
       animation: "float 6s ease-in-out infinite",
     }}>
       <style>{`@keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-12px) } }`}</style>
@@ -183,7 +188,7 @@ const DashboardPreview = () => {
             <span style={{ fontFamily: C.mono, fontSize: "10px", color: b.color }}>{b.w}%</span>
           </div>
           <div style={{ height: "6px", background: "rgba(255,255,255,0.04)", borderRadius: "3px", overflow: "hidden" }}>
-            <div style={{ width: `${b.w}%`, height: "100%", background: b.color, borderRadius: "3px", transition: "width 1.5s ease" }} />
+            <div style={{ width: `${b.w}%`, height: "100%", background: b.color, borderRadius: "3px", transition: "width 1.5s cubic-bezier(0.16,1,0.3,1)" }} />
           </div>
         </div>
       ))}
@@ -319,9 +324,125 @@ export default function ClearLedgerWebsite() {
         ::selection { background: ${C.accent}; color: white; }
         html { scroll-behavior: smooth; }
         body { background: ${C.bg}; }
-        input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.08); outline: none; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: ${C.accent}; cursor: pointer; border: 2px solid ${C.bg}; box-shadow: 0 0 12px ${C.accentGlow2}; }
-        input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: ${C.accent}; cursor: pointer; border: 2px solid ${C.bg}; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: ${C.bg}; }
+        ::-webkit-scrollbar-thumb { background: ${C.accent}80; border-radius: 4px; border: 2px solid ${C.bg}; }
+        ::-webkit-scrollbar-thumb:hover { background: ${C.accent}; }
+        * { scrollbar-width: thin; scrollbar-color: ${C.accent}80 ${C.bg}; }
+
+        @keyframes shimmer {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulseGlow {
+          0%, 100% { box-shadow: 0 0 20px ${C.accentGlow2}; }
+          50% { box-shadow: 0 0 36px ${C.accentGlow2}; }
+        }
+
+        .shimmer-text { background-size: 200% 200%; animation: shimmer 4s ease-in-out infinite; }
+        .detail-panel { animation: fadeInUp 0.3s cubic-bezier(0.16,1,0.3,1); }
+        .pulse-glow { animation: pulseGlow 3s ease-in-out infinite; }
+
+        .nav-link { position: relative; text-decoration: none; }
+        .nav-link::after {
+          content: '';
+          position: absolute;
+          bottom: -4px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 2px;
+          background: linear-gradient(90deg, ${C.accent}, ${C.cyan});
+          border-radius: 1px;
+          transition: width 0.3s cubic-bezier(0.16,1,0.3,1);
+        }
+        .nav-link:hover::after { width: 60%; }
+
+        .section-divider { position: relative; }
+        .section-divider::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 5%;
+          right: 5%;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, ${C.accent}30, ${C.cyan}30, transparent);
+        }
+
+        .comparison-row td { transition: background 0.2s cubic-bezier(0.16,1,0.3,1); }
+        .comparison-row:hover td { background: ${C.surfaceHover}; }
+        .comparison-row:hover td:last-child { background: rgba(107,92,231,0.2); }
+
+        .stat-card {
+          transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s cubic-bezier(0.16,1,0.3,1);
+        }
+        .stat-card:hover {
+          transform: translateY(-6px);
+          border-color: ${C.accent}50;
+          box-shadow: 0 16px 48px rgba(0,0,0,0.3), 0 0 0 1px ${C.accent}20;
+        }
+
+        .proof-card {
+          transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s cubic-bezier(0.16,1,0.3,1);
+        }
+        .proof-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+        }
+
+        .process-card {
+          transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s cubic-bezier(0.16,1,0.3,1);
+        }
+        .process-card:hover {
+          border-color: ${C.accent}50;
+          box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+        }
+
+        .service-card {
+          transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s cubic-bezier(0.16,1,0.3,1), background 0.4s cubic-bezier(0.16,1,0.3,1);
+        }
+        .service-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 48px rgba(0,0,0,0.25);
+          background: linear-gradient(135deg, ${C.bgCard}, ${C.surfaceHover});
+        }
+
+        .cta-input { transition: border-color 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s cubic-bezier(0.16,1,0.3,1); }
+        .cta-input:focus {
+          border-color: ${C.accent} !important;
+          box-shadow: 0 0 0 3px ${C.accent}20;
+        }
+
+        .pill-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 4px 12px;
+          border-radius: 20px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid ${C.border};
+          font-family: ${C.sans};
+          font-size: 11px;
+          color: ${C.textDim};
+          transition: background 0.3s cubic-bezier(0.16,1,0.3,1), border-color 0.3s cubic-bezier(0.16,1,0.3,1);
+        }
+        .pill-badge:hover { background: rgba(255,255,255,0.07); border-color: ${C.borderHover}; }
+
+        .footer-link { transition: color 0.3s cubic-bezier(0.16,1,0.3,1); }
+        .footer-link:hover { color: ${C.text}; }
+
+        input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.08); outline: none; transition: background 0.2s; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, ${C.accent}, ${C.accentDark}); cursor: pointer; border: 2px solid ${C.bg}; box-shadow: 0 0 16px ${C.accentGlow2}, 0 2px 8px rgba(0,0,0,0.3); transition: transform 0.2s cubic-bezier(0.16,1,0.3,1); }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.12); }
+        input[type="range"]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, ${C.accent}, ${C.accentDark}); cursor: pointer; border: 2px solid ${C.bg}; }
+        input[type="range"]:focus::-webkit-slider-thumb { box-shadow: 0 0 0 4px ${C.accentGlow}, 0 0 16px ${C.accentGlow2}; }
+
         @media (max-width: 768px) {
           .hero-split { flex-direction: column !important; text-align: center !important; }
           .hero-split > div:first-child { align-items: center !important; }
@@ -339,13 +460,21 @@ export default function ClearLedgerWebsite() {
       `}</style>
 
       {/* ─── NAV ───────────────────────────────────────────────── */}
-      <nav aria-label="Main navigation" style={{
+      <nav aria-label="Main navigation" className="nav-glass" style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-        background: scrolled ? "rgba(8,9,14,0.92)" : "transparent",
+        background: scrolled ? C.glassBg : "transparent",
         backdropFilter: scrolled ? "blur(20px)" : "none",
-        borderBottom: scrolled ? `1px solid ${C.border}` : "1px solid transparent",
-        transition: "all 0.3s ease",
+        WebkitBackdropFilter: scrolled ? "blur(20px)" : "none",
+        borderBottom: scrolled ? `1px solid transparent` : "1px solid transparent",
+        transition: "background 0.4s cubic-bezier(0.16,1,0.3,1), backdropFilter 0.4s cubic-bezier(0.16,1,0.3,1)",
       }}>
+        {scrolled && (
+          <div style={{
+            position: "absolute", bottom: -1, left: 0, right: 0, height: "1px",
+            background: `linear-gradient(90deg, transparent, ${C.accent}, ${C.cyan}, transparent)`,
+            opacity: 0.5,
+          }} />
+        )}
         <div style={{ ...sectionStyle, display: "flex", justifyContent: "space-between", alignItems: "center", height: "64px" }}>
           <a href="#" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none" }}>
             <LogoMark size={28} />
@@ -355,7 +484,7 @@ export default function ClearLedgerWebsite() {
           {/* Desktop nav */}
           <div style={{ display: "flex", alignItems: "center", gap: "32px" }} className="desktop-nav">
             {["Process", "Services", "ROI Calculator", "About"].map(l => (
-              <a key={l} href={`#${l.toLowerCase().replace(/ /g, "-")}`} style={{ fontFamily: C.sans, fontSize: "13px", color: C.textMid, textDecoration: "none", transition: "color 0.2s" }}
+              <a key={l} href={`#${l.toLowerCase().replace(/ /g, "-")}`} className="nav-link" style={{ fontFamily: C.sans, fontSize: "13px", color: C.textMid, textDecoration: "none", transition: "color 0.3s cubic-bezier(0.16,1,0.3,1)" }}
                 onMouseEnter={e => e.target.style.color = C.text}
                 onMouseLeave={e => e.target.style.color = C.textMid}
               >{l}</a>
@@ -364,7 +493,7 @@ export default function ClearLedgerWebsite() {
               fontFamily: C.sans, fontSize: "13px", fontWeight: 500, color: "white", textDecoration: "none",
               padding: "8px 20px", borderRadius: C.radiusSm,
               background: `linear-gradient(135deg, ${C.accent}, ${C.accentDark})`,
-              transition: "transform 0.2s, box-shadow 0.2s",
+              transition: "transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s cubic-bezier(0.16,1,0.3,1)",
             }}
               onMouseEnter={e => { e.target.style.transform = "translateY(-1px)"; e.target.style.boxShadow = `0 4px 20px ${C.accentGlow2}`; }}
               onMouseLeave={e => { e.target.style.transform = "translateY(0)"; e.target.style.boxShadow = "none"; }}
@@ -374,26 +503,40 @@ export default function ClearLedgerWebsite() {
           {/* Mobile hamburger */}
           <button onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen} style={{
             display: "none", background: "none", border: "none", cursor: "pointer", padding: "8px",
-            color: C.text, fontSize: "24px",
+            color: C.text, fontSize: "24px", zIndex: 101,
           }} className="mobile-menu-btn">
             {menuOpen ? "✕" : "☰"}
           </button>
         </div>
 
-        {/* Mobile menu */}
-        {menuOpen && (
-          <div style={{ padding: "16px 24px 24px", background: "rgba(8,9,14,0.98)", borderBottom: `1px solid ${C.border}` }}>
-            {["Process", "Services", "ROI Calculator", "About"].map(l => (
-              <a key={l} href={`#${l.toLowerCase().replace(/ /g, "-")}`} onClick={() => setMenuOpen(false)}
-                style={{ display: "block", padding: "12px 0", fontFamily: C.sans, fontSize: "15px", color: C.textMid, textDecoration: "none", borderBottom: `1px solid ${C.border}` }}
-              >{l}</a>
-            ))}
-            <a href="/diagnostic/" onClick={() => setMenuOpen(false)} style={{
-              display: "block", textAlign: "center", marginTop: "16px", padding: "12px", borderRadius: C.radiusSm,
-              background: C.accent, color: "white", fontFamily: C.sans, fontSize: "14px", fontWeight: 500, textDecoration: "none",
-            }}>Start Free Diagnostic</a>
-          </div>
-        )}
+        {/* Mobile menu — slide-in panel */}
+        <div style={{
+          position: "fixed", top: "64px", left: 0, right: 0, bottom: 0,
+          background: C.glassBg,
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          zIndex: 99,
+          transform: menuOpen ? "translateX(0)" : "translateX(100%)",
+          transition: "transform 0.4s cubic-bezier(0.16,1,0.3,1)",
+          padding: "24px",
+          overflowY: "auto",
+          borderTop: `1px solid ${C.border}`,
+          pointerEvents: menuOpen ? "auto" : "none",
+        }}>
+          {["Process", "Services", "ROI Calculator", "About"].map(l => (
+            <a key={l} href={`#${l.toLowerCase().replace(/ /g, "-")}`} onClick={() => setMenuOpen(false)}
+              style={{ display: "block", padding: "16px 0", fontFamily: C.sans, fontSize: "16px", color: C.textMid, textDecoration: "none", borderBottom: `1px solid ${C.border}` }}
+              onMouseEnter={e => e.target.style.color = C.text}
+              onMouseLeave={e => e.target.style.color = C.textMid}
+            >{l}</a>
+          ))}
+          <a href="/diagnostic/" onClick={() => setMenuOpen(false)} style={{
+            display: "block", textAlign: "center", marginTop: "24px", padding: "14px", borderRadius: C.radiusSm,
+            background: `linear-gradient(135deg, ${C.accent}, ${C.accentDark})`,
+            color: "white", fontFamily: C.sans, fontSize: "14px", fontWeight: 500, textDecoration: "none",
+            boxShadow: `0 4px 24px ${C.accentGlow2}`,
+          }}>Start Free Diagnostic</a>
+        </div>
 
         <style>{`
           @media (max-width: 768px) {
@@ -404,16 +547,23 @@ export default function ClearLedgerWebsite() {
       </nav>
 
       {/* ─── HERO ──────────────────────────────────────────────── */}
-      <section style={{ position: "relative", paddingTop: "120px", paddingBottom: "80px", overflow: "hidden" }}>
+      <section style={{ position: "relative", paddingTop: "120px", paddingBottom: "100px", overflow: "hidden" }}>
         <MeshBG />
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px)`,
+          backgroundSize: "40px 40px",
+          pointerEvents: "none",
+          zIndex: 0,
+        }} />
         <div style={{ ...sectionStyle, position: "relative", zIndex: 1 }}>
           <div className="hero-split" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "60px" }}>
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
               <Reveal>
                 <div style={labelStyle}>Order-to-Cash Advisory</div>
-                <h1 style={{ fontFamily: C.serif, fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 300, lineHeight: 1.15, color: C.text, marginBottom: "20px" }}>
+                <h1 style={{ fontFamily: C.serif, fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 300, lineHeight: 1.1, color: C.text, marginBottom: "20px" }}>
                   Turn your receivables into{" "}
-                  <span style={{ fontStyle: "italic", background: `linear-gradient(135deg, ${C.accent}, ${C.cyan})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                  <span className="shimmer-text" style={{ fontStyle: "italic", background: `linear-gradient(135deg, ${C.accent}, ${C.cyan}, ${C.accentBright}, ${C.cyan})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundSize: "200% 200%" }}>
                     competitive advantage
                   </span>
                 </h1>
@@ -427,14 +577,22 @@ export default function ClearLedgerWebsite() {
                     padding: "14px 28px", borderRadius: C.radiusSm,
                     background: `linear-gradient(135deg, ${C.accent}, ${C.accentDark})`,
                     boxShadow: `0 4px 24px ${C.accentGlow2}`,
-                    transition: "transform 0.2s",
-                  }}>Start Free Diagnostic</a>
+                    transition: "transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s cubic-bezier(0.16,1,0.3,1)",
+                    display: "inline-block",
+                  }}
+                    onMouseEnter={e => { e.target.style.transform = "scale(1.02)"; e.target.style.boxShadow = `0 8px 32px ${C.accentGlow2}`; }}
+                    onMouseLeave={e => { e.target.style.transform = "scale(1)"; e.target.style.boxShadow = `0 4px 24px ${C.accentGlow2}`; }}
+                  >Start Free Diagnostic</a>
                   <a href="#roi-calculator" style={{
                     fontFamily: C.sans, fontSize: "14px", fontWeight: 500, color: C.text, textDecoration: "none",
                     padding: "14px 28px", borderRadius: C.radiusSm,
                     border: `1px solid ${C.border}`, background: "rgba(255,255,255,0.03)",
-                    transition: "border-color 0.2s",
-                  }}>Calculate Your ROI →</a>
+                    transition: "transform 0.3s cubic-bezier(0.16,1,0.3,1), border-color 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s cubic-bezier(0.16,1,0.3,1)",
+                    display: "inline-block",
+                  }}
+                    onMouseEnter={e => { e.target.style.transform = "scale(1.02)"; e.target.style.borderColor = C.accent + "60"; e.target.style.boxShadow = `0 4px 24px rgba(0,0,0,0.2)`; }}
+                    onMouseLeave={e => { e.target.style.transform = "scale(1)"; e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
+                  >Calculate Your ROI →</a>
                 </div>
                 <div style={{ display: "flex", gap: "32px", marginTop: "36px", flexWrap: "wrap" }}>
                   {[
@@ -460,7 +618,7 @@ export default function ClearLedgerWebsite() {
       </section>
 
       {/* ─── COST OF INACTION ──────────────────────────────────── */}
-      <section style={{ padding: "80px 0", borderTop: `1px solid ${C.border}` }}>
+      <section className="section-divider" style={{ padding: "100px 0" }}>
         <div style={sectionStyle}>
           <Reveal>
             <div style={{ textAlign: "center", marginBottom: "48px" }}>
@@ -473,15 +631,16 @@ export default function ClearLedgerWebsite() {
           <div className="stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px" }}>
             {stats.map((s, i) => (
               <Reveal key={i} delay={i * 0.1}>
-                <div style={{
+                <div className="stat-card" style={{
                   background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: C.radius,
-                  padding: "28px 24px", textAlign: "center",
-                  transition: "transform 0.3s, border-color 0.3s",
+                  padding: "32px 24px 28px", textAlign: "center", position: "relative", overflow: "hidden",
                   cursor: "default",
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.borderColor = C.borderHover; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.borderColor = C.border; }}
-                >
+                }}>
+                  <div style={{
+                    position: "absolute", top: 0, left: "20%", right: "20%", height: "3px",
+                    background: `linear-gradient(90deg, ${C.accent}, ${C.cyan})`,
+                    borderRadius: "0 0 3px 3px",
+                  }} />
                   <div style={{ fontFamily: C.serif, fontSize: "40px", fontWeight: 300, color: C.text, marginBottom: "8px" }}>
                     <Counter end={s.val} prefix={s.prefix || ""} suffix={s.suffix} />
                   </div>
@@ -495,7 +654,7 @@ export default function ClearLedgerWebsite() {
       </section>
 
       {/* ─── SOCIAL PROOF / TOOLKIT CREDIBILITY ────────────────── */}
-      <section id="about" style={{ padding: "80px 0", borderTop: `1px solid ${C.border}` }}>
+      <section id="about" className="section-divider" style={{ padding: "100px 0" }}>
         <div style={sectionStyle}>
           <Reveal>
             <div style={{ textAlign: "center", marginBottom: "48px" }}>
@@ -512,17 +671,18 @@ export default function ClearLedgerWebsite() {
           <div className="proof-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px" }}>
             {proofPoints.map((p, i) => (
               <Reveal key={i} delay={i * 0.08}>
-                <div style={{
+                <div className="proof-card" style={{
                   background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: C.radius,
-                  padding: "28px 24px",
-                  transition: "border-color 0.3s",
-                }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = C.accent + "40"}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
-                >
+                  padding: "28px 24px", position: "relative", overflow: "hidden",
+                }}>
+                  <div style={{
+                    position: "absolute", top: "16px", left: 0, bottom: "16px", width: "2px",
+                    background: `linear-gradient(180deg, ${C.accent}, ${C.cyan})`,
+                    borderRadius: "0 2px 2px 0",
+                  }} />
                   <div style={{ fontFamily: C.serif, fontSize: "36px", fontWeight: 300, color: C.accent, marginBottom: "8px" }}>{p.metric}</div>
-                  <div style={{ fontFamily: C.sans, fontSize: "14px", color: C.text, marginBottom: "6px", lineHeight: 1.4 }}>{p.label}</div>
-                  <div style={{ fontFamily: C.mono, fontSize: "11px", color: C.textDim }}>{p.sub}</div>
+                  <div style={{ fontFamily: C.sans, fontSize: "14px", color: C.text, marginBottom: "6px", lineHeight: 1.4, paddingLeft: "4px" }}>{p.label}</div>
+                  <div style={{ fontFamily: C.mono, fontSize: "11px", color: C.textDim, paddingLeft: "4px" }}>{p.sub}</div>
                 </div>
               </Reveal>
             ))}
@@ -560,7 +720,7 @@ export default function ClearLedgerWebsite() {
       </section>
 
       {/* ─── POSITIONING TABLE ─────────────────────────────────── */}
-      <section style={{ padding: "80px 0", borderTop: `1px solid ${C.border}` }}>
+      <section className="section-divider" style={{ padding: "100px 0" }}>
         <div style={sectionStyle}>
           <Reveal>
             <div style={{ textAlign: "center", marginBottom: "48px" }}>
@@ -573,21 +733,21 @@ export default function ClearLedgerWebsite() {
               <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, fontFamily: C.sans, fontSize: "13px", minWidth: "640px" }}>
                 <thead>
                   <tr>
-                    <th style={{ padding: "14px 16px", textAlign: "left", color: C.textDim, fontWeight: 400, borderBottom: `1px solid ${C.border}`, fontSize: "12px" }}>Dimension</th>
-                    <th style={{ padding: "14px 16px", textAlign: "left", color: C.textDim, fontWeight: 400, borderBottom: `1px solid ${C.border}`, fontSize: "12px" }}>Big 4 Consulting</th>
-                    <th style={{ padding: "14px 16px", textAlign: "left", color: C.textDim, fontWeight: 400, borderBottom: `1px solid ${C.border}`, fontSize: "12px" }}>SaaS Vendor</th>
-                    <th style={{ padding: "14px 16px", textAlign: "left", color: C.accent, fontWeight: 600, borderBottom: `2px solid ${C.accent}`, fontSize: "12px", background: C.accentGlow }}>
+                    <th style={{ padding: "16px 18px", textAlign: "left", color: C.textDim, fontWeight: 500, borderBottom: `1px solid ${C.border}`, fontSize: "11px", letterSpacing: "0.5px" }}>Dimension</th>
+                    <th style={{ padding: "16px 18px", textAlign: "left", color: C.textDim, fontWeight: 500, borderBottom: `1px solid ${C.border}`, fontSize: "11px", letterSpacing: "0.5px" }}>Big 4 Consulting</th>
+                    <th style={{ padding: "16px 18px", textAlign: "left", color: C.textDim, fontWeight: 500, borderBottom: `1px solid ${C.border}`, fontSize: "11px", letterSpacing: "0.5px" }}>SaaS Vendor</th>
+                    <th style={{ padding: "16px 18px", textAlign: "left", color: C.accent, fontWeight: 600, borderBottom: `2px solid ${C.accent}`, fontSize: "11px", background: `rgba(107,92,231,0.15)`, letterSpacing: "0.5px" }}>
                       <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><LogoMark size={16} /> ClearLedger</span>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {comparisonRows.map((r, i) => (
-                    <tr key={i}>
-                      <td style={{ padding: "14px 16px", color: C.textMid, borderBottom: `1px solid ${C.border}`, fontWeight: 500 }}>{r.dim}</td>
-                      <td style={{ padding: "14px 16px", color: C.textDim, borderBottom: `1px solid ${C.border}` }}>{r.big4}</td>
-                      <td style={{ padding: "14px 16px", color: C.textDim, borderBottom: `1px solid ${C.border}` }}>{r.saas}</td>
-                      <td style={{ padding: "14px 16px", color: C.text, borderBottom: `1px solid ${C.border}`, background: C.accentGlow, fontWeight: 500 }}>{r.us}</td>
+                    <tr key={i} className="comparison-row">
+                      <td style={{ padding: "14px 18px", color: C.textMid, borderBottom: `1px solid ${C.border}`, fontWeight: 500 }}>{r.dim}</td>
+                      <td style={{ padding: "14px 18px", color: C.textDim, borderBottom: `1px solid ${C.border}` }}>{r.big4}</td>
+                      <td style={{ padding: "14px 18px", color: C.textDim, borderBottom: `1px solid ${C.border}` }}>{r.saas}</td>
+                      <td style={{ padding: "14px 18px", color: C.text, borderBottom: `1px solid ${C.border}`, background: `rgba(107,92,231,0.1)`, fontWeight: 500 }}>{r.us}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -598,7 +758,7 @@ export default function ClearLedgerWebsite() {
       </section>
 
       {/* ─── PROCESS ───────────────────────────────────────────── */}
-      <section id="process" style={{ padding: "80px 0", borderTop: `1px solid ${C.border}` }}>
+      <section id="process" className="section-divider" style={{ padding: "100px 0" }}>
         <div style={sectionStyle}>
           <Reveal>
             <div style={{ textAlign: "center", marginBottom: "48px" }}>
@@ -607,6 +767,13 @@ export default function ClearLedgerWebsite() {
             </div>
           </Reveal>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "2px", position: "relative" }} className="stats-grid">
+            {/* Connecting decorative line */}
+            <div style={{
+              position: "absolute", top: "44px", left: "calc(12.5% + 24px)", right: "calc(12.5% + 24px)",
+              height: "2px",
+              background: `linear-gradient(90deg, ${C.accent}40, ${C.accent}, ${C.cyan}, ${C.cyan}40)`,
+              zIndex: 0, pointerEvents: "none",
+            }} />
             {[
               { phase: "01", name: "Diagnose", desc: "APQC-aligned maturity assessment across 8 OtC domains. Baseline your current state.", time: "Week 1–2", icon: "🔍" },
               { phase: "02", name: "Design", desc: "Process architecture and technology recommendations. Benchmark-driven, not opinion-based.", time: "Week 3–6", icon: "📐" },
@@ -614,16 +781,25 @@ export default function ClearLedgerWebsite() {
               { phase: "04", name: "Measure", desc: "KPI dashboards, 45 metrics, post-go-live optimization. Prove the ROI.", time: "Week 15+", icon: "📊" },
             ].map((p, i) => (
               <Reveal key={i} delay={i * 0.1}>
-                <div style={{
+                <div className="process-card" style={{
                   background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: C.radius, padding: "28px 24px",
-                  position: "relative", overflow: "hidden",
-                  transition: "border-color 0.3s",
-                }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = C.accent + "40"}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
-                >
+                  position: "relative", overflow: "hidden", zIndex: 1,
+                }}>
+                  <div style={{
+                    position: "absolute", top: 0, left: "24px", right: "24px", height: "2px",
+                    background: `linear-gradient(90deg, ${C.accent}, ${C.cyan})`,
+                    borderRadius: "0 0 2px 2px",
+                    opacity: 0,
+                    transition: "opacity 0.4s cubic-bezier(0.16,1,0.3,1)",
+                  }} className="process-hover-border" />
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-                    <span style={{ fontFamily: C.mono, fontSize: "12px", color: C.accent }}>{p.phase}</span>
+                    <div style={{
+                      width: "36px", height: "36px", borderRadius: "50%",
+                      background: `linear-gradient(135deg, ${C.accent}, ${C.cyan})`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontFamily: C.mono, fontSize: "13px", fontWeight: 600, color: "white",
+                      boxShadow: `0 0 0 3px ${C.accentGlow}`,
+                    }}>{p.phase}</div>
                     <span style={{ fontSize: "24px" }}>{p.icon}</span>
                   </div>
                   <h3 style={{ fontFamily: C.serif, fontSize: "22px", fontWeight: 400, color: C.text, marginBottom: "10px" }}>{p.name}</h3>
@@ -637,7 +813,7 @@ export default function ClearLedgerWebsite() {
       </section>
 
       {/* ─── SERVICES ──────────────────────────────────────────── */}
-      <section id="services" style={{ padding: "80px 0", borderTop: `1px solid ${C.border}` }}>
+      <section id="services" className="section-divider" style={{ padding: "100px 0" }}>
         <div style={sectionStyle}>
           <Reveal>
             <div style={{ textAlign: "center", marginBottom: "48px" }}>
@@ -651,35 +827,40 @@ export default function ClearLedgerWebsite() {
           <div className="services-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
             {services.map((s, i) => (
               <Reveal key={i} delay={i * 0.1}>
-                <div style={{
+                <div className="service-card" style={{
                   background: C.bgCard,
                   border: `1px solid ${s.popular ? C.accent + "50" : C.border}`,
                   borderRadius: C.radius,
                   padding: "32px 28px",
                   position: "relative",
-                  transition: "transform 0.3s, border-color 0.3s",
                   display: "flex", flexDirection: "column",
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; if (!s.popular) e.currentTarget.style.borderColor = C.borderHover; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; if (!s.popular) e.currentTarget.style.borderColor = C.border; }}
-                >
+                }}>
                   {s.popular && (
                     <div style={{
-                      position: "absolute", top: "-1px", left: "50%", transform: "translateX(-50%)",
-                      background: C.accent, color: "white", fontFamily: C.mono, fontSize: "10px",
-                      padding: "4px 14px", borderRadius: "0 0 6px 6px", letterSpacing: "1px",
-                    }}>MOST POPULAR</div>
+                      position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
+                      background: `linear-gradient(135deg, ${C.accent}, ${C.accentDark})`,
+                      color: "white", fontFamily: C.mono, fontSize: "9px",
+                      padding: "5px 16px", borderRadius: "0 0 8px 8px", letterSpacing: "1.5px",
+                      boxShadow: `0 4px 12px ${C.accentGlow2}`,
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                    }}>Most Popular</div>
                   )}
-                  <h3 style={{ fontFamily: C.serif, fontSize: "24px", fontWeight: 400, color: C.text, marginBottom: "8px", marginTop: s.popular ? "12px" : 0 }}>{s.name}</h3>
-                  <div style={{ fontFamily: C.mono, fontSize: "20px", color: C.accent, marginBottom: "4px" }}>{s.price}</div>
+                  <h3 style={{ fontFamily: C.serif, fontSize: "24px", fontWeight: 400, color: C.text, marginBottom: "8px", marginTop: s.popular ? "16px" : 0 }}>{s.name}</h3>
+                  <div style={{ fontFamily: C.mono, fontSize: "22px", fontWeight: 600, color: C.accent, marginBottom: "4px" }}>{s.price}</div>
                   <div style={{ fontFamily: C.mono, fontSize: "12px", color: C.textDim, marginBottom: "16px" }}>{s.timeline}</div>
                   <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.cyan, marginBottom: "20px", padding: "8px 12px", background: C.cyanDim, borderRadius: C.radiusSm }}>
                     Best when: {s.best}
                   </div>
                   <ul style={{ listStyle: "none", marginBottom: "20px", flex: 1 }}>
                     {s.features.map((f, j) => (
-                      <li key={j} style={{ fontFamily: C.sans, fontSize: "13px", color: C.textMid, padding: "6px 0", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                        <span style={{ color: C.green, fontSize: "12px", marginTop: "2px" }}>✓</span>
+                      <li key={j} style={{ fontFamily: C.sans, fontSize: "13px", color: C.textMid, padding: "7px 0", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                        <span style={{
+                          color: C.green, fontSize: "11px", marginTop: "2px",
+                          display: "inline-flex", alignItems: "center", justifyContent: "center",
+                          width: "18px", height: "18px", borderRadius: "50%", background: C.greenDim,
+                          flexShrink: 0, fontWeight: 700,
+                        }}>✓</span>
                         {f}
                       </li>
                     ))}
@@ -689,16 +870,18 @@ export default function ClearLedgerWebsite() {
                     style={{
                       width: "100%", padding: "12px", borderRadius: C.radiusSm, cursor: "pointer",
                       fontFamily: C.sans, fontSize: "13px", fontWeight: 500,
-                      background: s.popular ? C.accent : "transparent",
+                      background: s.popular ? `linear-gradient(135deg, ${C.accent}, ${C.accentDark})` : "transparent",
                       color: s.popular ? "white" : C.textMid,
                       border: s.popular ? "none" : `1px solid ${C.border}`,
-                      transition: "all 0.2s",
+                      transition: "all 0.3s cubic-bezier(0.16,1,0.3,1)",
                     }}
+                    onMouseEnter={e => { if (!s.popular) { e.target.style.borderColor = C.accent + "60"; e.target.style.color = C.accent; } }}
+                    onMouseLeave={e => { if (!s.popular) { e.target.style.borderColor = C.border; e.target.style.color = C.textMid; } }}
                   >
                     {activeService === i ? "Hide Details" : "Learn More"}
                   </button>
                   {activeService === i && (
-                    <div style={{ marginTop: "16px", padding: "16px", background: "rgba(255,255,255,0.02)", borderRadius: C.radiusSm, fontFamily: C.sans, fontSize: "13px", color: C.textDim, lineHeight: 1.6 }}>
+                    <div className="detail-panel" style={{ marginTop: "16px", padding: "16px", background: "rgba(255,255,255,0.02)", borderRadius: C.radiusSm, fontFamily: C.sans, fontSize: "13px", color: C.textDim, lineHeight: 1.6 }}>
                       {s.detail}
                     </div>
                   )}
@@ -710,7 +893,7 @@ export default function ClearLedgerWebsite() {
       </section>
 
       {/* ─── ROI CALCULATOR ────────────────────────────────────── */}
-      <section id="roi-calculator" style={{ padding: "80px 0", borderTop: `1px solid ${C.border}` }}>
+      <section id="roi-calculator" className="section-divider" style={{ padding: "100px 0" }}>
         <div style={sectionStyle}>
           <Reveal>
             <div style={{ textAlign: "center", marginBottom: "48px" }}>
@@ -745,8 +928,8 @@ export default function ClearLedgerWebsite() {
               </div>
 
               {/* Results */}
-              <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: C.radius, padding: "32px 28px" }}>
-                <div style={{ fontFamily: C.sans, fontSize: "11px", color: C.textDim, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "24px" }}>
+              <div style={{ background: `linear-gradient(135deg, ${C.bgCard}, ${C.surface})`, border: `1px solid ${C.border}`, borderRadius: C.radius, padding: "32px 28px" }}>
+                <div style={{ fontFamily: C.sans, fontSize: "11px", color: C.textDim, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "24px", fontWeight: 500 }}>
                   Estimated Annual Impact
                 </div>
                 {[
@@ -757,15 +940,15 @@ export default function ClearLedgerWebsite() {
                   <div key={i} style={{ marginBottom: "20px", paddingBottom: "20px", borderBottom: i < 2 ? `1px solid ${C.border}` : "none" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                       <span style={{ fontFamily: C.sans, fontSize: "14px", color: C.text }}>{r.label}</span>
-                      <span style={{ fontFamily: C.mono, fontSize: "18px", fontWeight: 600, color: C.green }}>{fmt(r.val)}</span>
+                      <span style={{ fontFamily: C.mono, fontSize: "20px", fontWeight: 600, color: C.green }}>{fmt(r.val)}</span>
                     </div>
                     <span style={{ fontFamily: C.sans, fontSize: "11px", color: C.textDim }}>{r.desc}</span>
                   </div>
                 ))}
-                <div style={{ marginTop: "8px", padding: "20px", background: `linear-gradient(135deg, ${C.accentGlow}, ${C.accentGlow2})`, borderRadius: C.radiusSm, border: `1px solid ${C.accent}30` }}>
+                <div className="pulse-glow" style={{ marginTop: "8px", padding: "20px 24px", background: `linear-gradient(135deg, ${C.accentGlow}, ${C.accentGlow2})`, borderRadius: C.radiusSm, border: `1px solid ${C.accent}40` }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontFamily: C.sans, fontSize: "14px", color: C.text, fontWeight: 500 }}>Total Annual Benefit</span>
-                    <span style={{ fontFamily: C.mono, fontSize: "28px", fontWeight: 700, background: `linear-gradient(135deg, ${C.accent}, ${C.cyan})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                    <span style={{ fontFamily: C.sans, fontSize: "15px", color: C.text, fontWeight: 500 }}>Total Annual Benefit</span>
+                    <span style={{ fontFamily: C.mono, fontSize: "30px", fontWeight: 700, background: `linear-gradient(135deg, ${C.accent}, ${C.cyan})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                       {fmt(totalBenefit)}
                     </span>
                   </div>
@@ -780,7 +963,7 @@ export default function ClearLedgerWebsite() {
       </section>
 
       {/* ─── ABOUT ─────────────────────────────────────────────── */}
-      <section id="about" style={{ padding: "80px 0", borderTop: `1px solid ${C.border}` }}>
+      <section id="about" className="section-divider" style={{ padding: "100px 0" }}>
         <div style={sectionStyle}>
           <Reveal>
             <div style={{ textAlign: "center", marginBottom: "48px" }}>
@@ -793,35 +976,40 @@ export default function ClearLedgerWebsite() {
               <div>
                 <div style={{
                   width: "100%", aspectRatio: "1 / 1.2", borderRadius: C.radius,
-                  background: `linear-gradient(135deg, ${C.bgCard2}, ${C.surface})`,
-                  border: `1px solid ${C.border}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  maxHeight: "400px", overflow: "hidden",
+                  padding: "3px",
+                  background: `linear-gradient(135deg, ${C.accent}, ${C.cyan}, ${C.accent})`,
+                  maxHeight: "400px",
+                  boxShadow: `0 0 40px ${C.accentGlow2}`,
                 }}>
-                  <img src="/Headshot.jpg" alt="Nazim Boukhouf, founder of ClearLedger" style={{
-                    width: "100%", height: "100%", objectFit: "cover",
-                  }} />
+                  <div style={{
+                    width: "100%", height: "100%", borderRadius: `calc(${C.radius} - 3px)`,
+                    overflow: "hidden",
+                  }}>
+                    <img src="/Headshot.jpg" alt="Nazim Boukhouf, founder of ClearLedger" style={{
+                      width: "100%", height: "100%", objectFit: "cover",
+                    }} />
+                  </div>
                 </div>
               </div>
             </Reveal>
             <Reveal delay={0.1}>
               <div>
-                <h3 style={{ fontFamily: C.serif, fontSize: "26px", fontWeight: 400, color: C.text, marginBottom: "4px" }}>Nazim Boukhouf</h3>
-                <div style={{ fontFamily: C.sans, fontSize: "13px", color: C.accent, marginBottom: "20px" }}>
+                <h3 style={{ fontFamily: C.serif, fontSize: "28px", fontWeight: 400, color: C.text, marginBottom: "6px" }}>Nazim Boukhouf</h3>
+                <div style={{ fontFamily: C.sans, fontSize: "13px", color: C.accent, marginBottom: "24px", letterSpacing: "0.3px" }}>
                   Finance & AR Operations · Lean Six Sigma Black Belt
                 </div>
-                <p style={{ fontFamily: C.sans, fontSize: "14px", color: C.textDim, lineHeight: 1.8, marginBottom: "20px" }}>
+                <p style={{ fontFamily: C.sans, fontSize: "14px", color: C.textDim, lineHeight: 1.9, marginBottom: "20px" }}>
                   A decade in the trenches of enterprise Order-to-Cash — across three continents, three languages, and some of the most complex AR operations in EMEA. The kind of experience that reveals where processes bleed money and exactly how to stop it.
                 </p>
-                <p style={{ fontFamily: C.sans, fontSize: "14px", color: C.textDim, lineHeight: 1.8, marginBottom: "20px" }}>
+                <p style={{ fontFamily: C.sans, fontSize: "14px", color: C.textDim, lineHeight: 1.9, marginBottom: "20px" }}>
                   ClearLedger is what that experience built: a benchmark-driven OtC practice that treats finance operations like a system — measure it, tune it, prove it.
                 </p>
-                <p style={{ fontFamily: C.sans, fontSize: "14px", color: C.textDim, lineHeight: 1.8 }}>
+                <p style={{ fontFamily: C.sans, fontSize: "14px", color: C.textDim, lineHeight: 1.9 }}>
                   No fluff. No mystery. Just a straight path from where your AR is to where it should be.
                 </p>
-                <div style={{ display: "flex", gap: "20px", marginTop: "24px" }}>
+                <div style={{ display: "flex", gap: "20px", marginTop: "28px" }}>
                   <a href="https://linkedin.com/in/nazim-boukhouf" target="_blank" rel="noopener noreferrer"
-                    style={{ fontFamily: C.sans, fontSize: "12px", color: C.accent, textDecoration: "none", transition: "color 0.2s" }}
+                    style={{ fontFamily: C.sans, fontSize: "12px", color: C.accent, textDecoration: "none", transition: "color 0.3s cubic-bezier(0.16,1,0.3,1)" }}
                     onMouseEnter={e => e.target.style.color = C.accentBright}
                     onMouseLeave={e => e.target.style.color = C.accent}
                   >LinkedIn →</a>
@@ -853,11 +1041,15 @@ export default function ClearLedgerWebsite() {
 
             {formStatus === "success" ? (
               <div style={{
-                maxWidth: "480px", margin: "0 auto", padding: "24px",
-                background: C.greenDim, border: `1px solid rgba(61,220,132,0.2)`, borderRadius: C.radius,
+                maxWidth: "480px", margin: "0 auto", padding: "28px 24px",
+                background: C.greenDim, border: `1px solid rgba(61,220,132,0.25)`, borderRadius: C.radius,
               }}>
-                <div style={{ fontSize: "24px", marginBottom: "8px" }}>✓</div>
-                <div style={{ fontFamily: C.sans, fontSize: "15px", color: C.green, fontWeight: 500 }}>You're in.</div>
+                <div style={{
+                  width: "48px", height: "48px", borderRadius: "50%", background: C.green,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  margin: "0 auto 12px", fontSize: "22px", color: "white", fontWeight: 700,
+                }}>✓</div>
+                <div style={{ fontFamily: C.sans, fontSize: "16px", color: C.green, fontWeight: 600, marginBottom: "4px" }}>You're in.</div>
                 <div style={{ fontFamily: C.sans, fontSize: "13px", color: C.textDim, marginTop: "8px" }}>
                   We'll send your diagnostic link within 24 hours.
                 </div>
@@ -865,22 +1057,26 @@ export default function ClearLedgerWebsite() {
             ) : (
               <div style={{ maxWidth: "480px", margin: "0 auto" }}>
                 <div style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
-                  <input
-                    type="email"
-                    placeholder="your@email.com"
-                    aria-label="Email address"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && handleEmailSubmit(e)}
-                    style={{
-                      flex: 1, padding: "14px 18px", borderRadius: C.radiusSm,
-                      background: C.bgCard, border: `1px solid ${C.border}`,
-                      color: C.text, fontFamily: C.sans, fontSize: "14px",
-                      outline: "none", transition: "border-color 0.2s",
-                    }}
-                    onFocus={e => e.target.style.borderColor = C.accent}
-                    onBlur={e => e.target.style.borderColor = C.border}
-                  />
+                  <div style={{ position: "relative", flex: 1 }}>
+                    <span style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", fontSize: "14px", color: C.textDim, pointerEvents: "none", zIndex: 1 }}>✉</span>
+                    <input
+                      type="email"
+                      placeholder="your@email.com"
+                      aria-label="Email address"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && handleEmailSubmit(e)}
+                      className="cta-input"
+                      style={{
+                        width: "100%", padding: "14px 18px 14px 40px", borderRadius: C.radiusSm,
+                        background: C.bgCard, border: `1px solid ${C.border}`,
+                        color: C.text, fontFamily: C.sans, fontSize: "14px",
+                        outline: "none",
+                      }}
+                      onFocus={e => e.target.style.borderColor = C.accent}
+                      onBlur={e => e.target.style.borderColor = C.border}
+                    />
+                  </div>
                   <button
                     onClick={handleEmailSubmit}
                     disabled={formStatus === "submitting"}
@@ -890,24 +1086,32 @@ export default function ClearLedgerWebsite() {
                       color: "white", fontFamily: C.sans, fontSize: "14px", fontWeight: 500,
                       boxShadow: `0 4px 24px ${C.accentGlow2}`,
                       opacity: formStatus === "submitting" ? 0.7 : 1,
-                      transition: "transform 0.2s, opacity 0.2s",
+                      transition: "transform 0.3s cubic-bezier(0.16,1,0.3,1), opacity 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s cubic-bezier(0.16,1,0.3,1)",
+                      whiteSpace: "nowrap",
                     }}
+                    onMouseEnter={e => { if (formStatus !== "submitting") { e.target.style.transform = "scale(1.02)"; e.target.style.boxShadow = `0 8px 32px ${C.accentGlow2}`; } }}
+                    onMouseLeave={e => { e.target.style.transform = "scale(1)"; e.target.style.boxShadow = `0 4px 24px ${C.accentGlow2}`; }}
                   >
                     {formStatus === "submitting" ? "Sending..." : "Get Diagnostic"}
                   </button>
                 </div>
                 {formStatus === "error" && (
-                  <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.red, marginBottom: "8px" }}>
+                  <div style={{
+                    fontFamily: C.sans, fontSize: "12px", color: C.red, marginBottom: "12px",
+                    padding: "10px 16px", background: C.redDim, borderRadius: C.radiusSm,
+                    border: `1px solid ${C.red}20`,
+                    display: "inline-block",
+                  }}>
                     Something went wrong. Please try again or email us directly.
                   </div>
                 )}
-                <div style={{ display: "flex", justifyContent: "center", gap: "20px", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap", marginTop: formStatus === "error" ? "4px" : "0" }}>
                   {[
                     { icon: "🔒", text: "No credit card" },
                     { icon: "⏱️", text: "10 minutes" },
                     { icon: "📊", text: "Instant results" },
                   ].map((b, i) => (
-                    <span key={i} style={{ fontFamily: C.sans, fontSize: "11px", color: C.textDim, display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span key={i} className="pill-badge">
                       <span>{b.icon}</span> {b.text}
                     </span>
                   ))}
@@ -919,21 +1123,24 @@ export default function ClearLedgerWebsite() {
       </section>
 
       {/* ─── FOOTER ────────────────────────────────────────────── */}
-      <footer style={{ padding: "60px 0 32px", borderTop: `1px solid ${C.border}`, background: C.bgCard }}>
+      <footer style={{ padding: "64px 0 32px", borderTop: `1px solid ${C.border}`, background: C.bgCard }}>
         <div style={sectionStyle}>
-          <div className="footer-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: "40px", marginBottom: "40px" }}>
+          <div className="footer-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: "48px", marginBottom: "48px" }}>
             {/* Brand column */}
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
                 <LogoMark size={24} />
                 <span style={{ fontFamily: C.serif, fontSize: "16px", color: C.text }}>ClearLedger</span>
               </div>
-              <p style={{ fontFamily: C.sans, fontSize: "13px", color: C.textDim, lineHeight: 1.6, maxWidth: "280px" }}>
+              <p style={{ fontFamily: C.sans, fontSize: "13px", color: C.textDim, lineHeight: 1.7, maxWidth: "280px" }}>
                 APQC-aligned Order-to-Cash advisory for growing companies. Diagnostics, process architecture, and implementation.
               </p>
-              <div style={{ fontFamily: C.mono, fontSize: "11px", color: C.textDim, marginTop: "12px" }}>Warsaw · Global Delivery</div>
-              <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.textDim, marginTop: "8px" }}>
-                <a href="mailto:stoic.nazim20@gmail.com" style={{ color: C.accent, textDecoration: "none" }}>stoic.nazim20@gmail.com</a>
+              <div style={{ fontFamily: C.mono, fontSize: "11px", color: C.textDim, marginTop: "16px" }}>Warsaw · Global Delivery</div>
+              <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.textDim, marginTop: "10px" }}>
+                <a href="mailto:stoic.nazim20@gmail.com" style={{ color: C.accent, textDecoration: "none", transition: "color 0.3s cubic-bezier(0.16,1,0.3,1)" }}
+                  onMouseEnter={e => e.target.style.color = C.accentBright}
+                  onMouseLeave={e => e.target.style.color = C.accent}
+                >stoic.nazim20@gmail.com</a>
               </div>
             </div>
 
@@ -941,9 +1148,7 @@ export default function ClearLedgerWebsite() {
             <div>
               <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.textMid, fontWeight: 500, marginBottom: "16px", textTransform: "uppercase", letterSpacing: "1px" }}>Services</div>
               {["Health Check", "Accelerator", "Transformation", "Free Diagnostic"].map(l => (
-                <a key={l} href={l === "Free Diagnostic" ? "/diagnostic/" : "#services"} style={{ display: "block", fontFamily: C.sans, fontSize: "13px", color: C.textDim, textDecoration: "none", padding: "4px 0", transition: "color 0.2s" }}
-                  onMouseEnter={e => e.target.style.color = C.text}
-                  onMouseLeave={e => e.target.style.color = C.textDim}
+                <a key={l} href={l === "Free Diagnostic" ? "/diagnostic/" : "#services"} className="footer-link" style={{ display: "block", fontFamily: C.sans, fontSize: "13px", color: C.textDim, textDecoration: "none", padding: "5px 0" }}
                 >{l}</a>
               ))}
             </div>
@@ -952,7 +1157,7 @@ export default function ClearLedgerWebsite() {
             <div>
               <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.textMid, fontWeight: 500, marginBottom: "16px", textTransform: "uppercase", letterSpacing: "1px" }}>Expertise</div>
               {["Collections & AR", "Cash Application", "Credit Management", "Deductions", "Treasury & WC"].map(l => (
-                <span key={l} style={{ display: "block", fontFamily: C.sans, fontSize: "13px", color: C.textDim, padding: "4px 0" }}>{l}</span>
+                <span key={l} className="footer-link" style={{ display: "block", fontFamily: C.sans, fontSize: "13px", color: C.textDim, padding: "5px 0", cursor: "default" }}>{l}</span>
               ))}
             </div>
 
@@ -960,7 +1165,7 @@ export default function ClearLedgerWebsite() {
             <div>
               <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.textMid, fontWeight: 500, marginBottom: "16px", textTransform: "uppercase", letterSpacing: "1px" }}>Standards</div>
               {["APQC PCF v8.0", "Hackett Benchmarks", "IFRS 15 / ASC 606", "SOX 404 Controls", "Peppol / e-Invoicing"].map(l => (
-                <span key={l} style={{ display: "block", fontFamily: C.mono, fontSize: "11px", color: C.textDim, padding: "4px 0" }}>{l}</span>
+                <span key={l} className="footer-link" style={{ display: "block", fontFamily: C.mono, fontSize: "11px", color: C.textDim, padding: "5px 0", cursor: "default" }}>{l}</span>
               ))}
             </div>
           </div>
@@ -968,18 +1173,16 @@ export default function ClearLedgerWebsite() {
           {/* Legal links & copyright */}
           <div style={{
             paddingTop: "24px", borderTop: `1px solid ${C.border}`,
-            display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px",
+            display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px",
           }}>
             <span style={{ fontFamily: C.sans, fontSize: "11px", color: C.textDim }}>
               © 2026 ClearLedger. All rights reserved.
             </span>
-            <div style={{ display: "flex", gap: "20px" }}>
+            <div style={{ display: "flex", gap: "24px" }}>
               {["Privacy Policy", "Terms of Service", "Cookie Policy"].map(l => {
                 const legalTabs = { "Privacy Policy": "privacy", "Terms of Service": "terms", "Cookie Policy": "cookies" };
                 return (
-                  <a key={l} href={`/legal/?tab=${legalTabs[l]}`} style={{ fontFamily: C.sans, fontSize: "11px", color: C.textDim, textDecoration: "none", transition: "color 0.2s" }}
-                    onMouseEnter={e => e.target.style.color = C.text}
-                    onMouseLeave={e => e.target.style.color = C.textDim}
+                  <a key={l} href={`/legal/?tab=${legalTabs[l]}`} className="footer-link" style={{ fontFamily: C.sans, fontSize: "11px", color: C.textDim, textDecoration: "none", position: "relative" }}
                   >{l}</a>
                 );
               })}
