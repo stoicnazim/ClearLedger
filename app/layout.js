@@ -1,4 +1,5 @@
 import './globals.css';
+import { Analytics } from '@vercel/analytics/react';
 
 export const metadata = {
   metadataBase: new URL('https://clearledger.app'),
@@ -43,6 +44,7 @@ export default function RootLayout({ children }) {
       <body>
         <a href="#main-content" className="skip-link">Skip to content</a>
         {children}
+        <Analytics />
       </body>
     </html>
   );
