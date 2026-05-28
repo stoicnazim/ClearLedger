@@ -6,6 +6,7 @@ const C = {
   bgCard: "#0D1117",
   bgCard2: "#131A2B",
   surface: "#161D2F",
+  surfaceHover: "#1A2335",
   border: "rgba(255,255,255,0.06)",
   borderHover: "rgba(255,255,255,0.12)",
   text: "#E8E6F0",
@@ -15,7 +16,9 @@ const C = {
   accentBright: "#8677F0",
   accentDark: "#5A4BD6",
   accentGlow: "rgba(107,92,231,0.12)",
-  accentGlow2: "rgba(107,92,231,0.25)",
+  accentGlow2: "rgba(107,92,231,0.35)",
+  accentGradient: "linear-gradient(135deg, #6B5CE7, #4FC3F7)",
+  glassBg: "rgba(13,17,23,0.85)",
   cyan: "#4FC3F7",
   cyanDim: "rgba(79,195,247,0.1)",
   green: "#3DDC84",
@@ -444,7 +447,14 @@ export default function ClearLedgerDiagnostic() {
   const [currentDomain, setCurrentDomain] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [showDetail, setShowDetail] = useState(null);
+  const [scrolled, setScrolled] = useState(false);
   const topRef = useRef(null);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const scrollToTop = () => topRef.current?.scrollIntoView({ behavior: "smooth" });
 
@@ -513,29 +523,120 @@ export default function ClearLedgerDiagnostic() {
         ::selection { background: ${C.accent}; color: white; }
         html { scroll-behavior: smooth; }
         body { background: ${C.bg}; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: ${C.bg}; }
+        ::-webkit-scrollbar-thumb { background: ${C.accent}80; border-radius: 4px; border: 2px solid ${C.bg}; }
+        ::-webkit-scrollbar-thumb:hover { background: ${C.accent}; }
+        * { scrollbar-width: thin; scrollbar-color: ${C.accent}80 ${C.bg}; }
+
+        @keyframes shimmer {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulseGlow {
+          0%, 100% { box-shadow: 0 0 20px ${C.accentGlow2}; }
+          50% { box-shadow: 0 0 36px ${C.accentGlow2}; }
+        }
+
+        .shimmer-text { background-size: 200% 200%; animation: shimmer 4s ease-in-out infinite; }
+        .detail-panel { animation: fadeInUp 0.3s cubic-bezier(0.16,1,0.3,1); }
+        .pulse-glow { animation: pulseGlow 3s ease-in-out infinite; }
+
+        .tier-card {
+          transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s cubic-bezier(0.16,1,0.3,1), background 0.4s cubic-bezier(0.16,1,0.3,1);
+        }
+        .tier-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+        }
+
+        .domain-preview-card {
+          transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s cubic-bezier(0.16,1,0.3,1);
+        }
+        .domain-preview-card:hover {
+          transform: translateY(-4px);
+          border-color: ${C.accent}40;
+          box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+        }
+
+        .option-btn {
+          transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
+        }
+        .option-btn:hover {
+          transform: translateX(4px);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .domain-tab {
+          transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
+        }
+        .domain-tab:hover {
+          transform: translateY(-2px);
+        }
+
+        .metric-card {
+          transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s cubic-bezier(0.16,1,0.3,1);
+        }
+        .metric-card:hover {
+          transform: translateY(-4px);
+          border-color: ${C.accent}40;
+          box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+        }
+
+        .package-card {
+          transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s cubic-bezier(0.16,1,0.3,1);
+        }
+        .package-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 48px rgba(0,0,0,0.25);
+        }
+
         @media (max-width: 640px) {
           .profile-grid { grid-template-columns: 1fr !important; }
           .results-metrics { grid-template-columns: 1fr 1fr !important; }
           .packages-grid { grid-template-columns: 1fr !important; }
+          .intro-features { grid-template-columns: 1fr 1fr !important; }
+          .intro-cards { grid-template-columns: 1fr 1fr !important; }
+        }
+        @media (max-width: 480px) {
+          .intro-features { grid-template-columns: 1fr !important; }
+          .intro-cards { grid-template-columns: 1fr !important; }
         }
       `}</style>
 
       {/* ─── Header ──────────────────────────────────────────── */}
-      <header style={{
-        padding: "16px 24px", borderBottom: `1px solid ${C.border}`,
+      <header aria-label="Site header" style={{
+        padding: "0 24px",
         display: "flex", justifyContent: "space-between", alignItems: "center",
-        background: "rgba(8,9,14,0.92)", backdropFilter: "blur(20px)",
+        background: scrolled ? C.glassBg : "transparent",
+        backdropFilter: scrolled ? "blur(20px)" : "none",
+        WebkitBackdropFilter: scrolled ? "blur(20px)" : "none",
         position: "sticky", top: 0, zIndex: 50,
+        transition: "background 0.4s cubic-bezier(0.16,1,0.3,1), backdropFilter 0.4s cubic-bezier(0.16,1,0.3,1)",
+        height: "64px",
       }}>
+        {scrolled && (
+          <div style={{
+            position: "absolute", bottom: -1, left: 0, right: 0, height: "1px",
+            background: `linear-gradient(90deg, transparent, ${C.accent}, ${C.cyan}, transparent)`,
+            opacity: 0.5,
+          }} />
+        )}
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <LogoMark size={24} />
           <span style={{ fontFamily: C.serif, fontSize: "16px", color: C.text }}>ClearLedger</span>
-          <span style={{ fontFamily: C.mono, fontSize: "10px", color: C.textDim, marginLeft: "8px", padding: "2px 8px", background: C.accentGlow, borderRadius: "4px" }}>DIAGNOSTIC</span>
+          <span style={{ fontFamily: C.mono, fontSize: "10px", color: C.textDim, marginLeft: "8px", padding: "3px 10px", background: C.accentGlow, borderRadius: "4px", letterSpacing: "0.5px" }}>DIAGNOSTIC</span>
         </div>
         {screen === "assessment" && (
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div style={{ width: "120px", height: "4px", background: "rgba(255,255,255,0.06)", borderRadius: "2px", overflow: "hidden" }}>
-              <div style={{ width: `${progress}%`, height: "100%", background: C.accent, borderRadius: "2px", transition: "width 0.5s ease" }} />
+              <div style={{ width: `${progress}%`, height: "100%", background: `linear-gradient(90deg, ${C.accent}, ${C.cyan})`, borderRadius: "2px", transition: "width 0.5s cubic-bezier(0.16,1,0.3,1)" }} />
             </div>
             <span style={{ fontFamily: C.mono, fontSize: "11px", color: C.textDim }}>{answeredCount}/{totalQuestions}</span>
           </div>
@@ -548,9 +649,9 @@ export default function ClearLedgerDiagnostic() {
           <div style={{ fontFamily: C.mono, fontSize: "11px", color: C.accent, textTransform: "uppercase", letterSpacing: "2px", marginBottom: "16px" }}>
             OtC Maturity Assessment
           </div>
-          <h1 style={{ fontFamily: C.serif, fontSize: "clamp(32px, 5vw, 48px)", fontWeight: 300, lineHeight: 1.2, marginBottom: "20px" }}>
+          <h1 style={{ fontFamily: C.serif, fontSize: "clamp(32px, 5vw, 48px)", fontWeight: 300, lineHeight: 1.15, marginBottom: "20px" }}>
             How mature is your{" "}
-            <span style={{ fontStyle: "italic", background: `linear-gradient(135deg, ${C.accent}, ${C.cyan})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            <span className="shimmer-text" style={{ fontStyle: "italic", background: `linear-gradient(135deg, ${C.accent}, ${C.cyan}, ${C.accentBright}, ${C.cyan})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundSize: "200% 200%" }}>
               Order-to-Cash
             </span>{" "}
             process?
@@ -561,7 +662,7 @@ export default function ClearLedgerDiagnostic() {
             quick wins identified.
           </p>
 
-          <div style={{ display: "flex", justifyContent: "center", gap: "48px", marginBottom: "48px", flexWrap: "wrap" }}>
+          <div className="intro-features" style={{ display: "flex", justifyContent: "center", gap: "48px", marginBottom: "48px", flexWrap: "wrap" }}>
             {[
               { icon: "⏱️", text: "10 minutes" },
               { icon: "📊", text: "8 domains scored" },
@@ -580,19 +681,24 @@ export default function ClearLedgerDiagnostic() {
             background: `linear-gradient(135deg, ${C.accent}, ${C.accentDark})`,
             color: "white", fontFamily: C.sans, fontSize: "16px", fontWeight: 500,
             boxShadow: `0 4px 32px ${C.accentGlow2}`,
-            transition: "transform 0.2s",
+            transition: "transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s cubic-bezier(0.16,1,0.3,1)",
           }}
-            onMouseEnter={e => e.target.style.transform = "translateY(-2px)"}
-            onMouseLeave={e => e.target.style.transform = "translateY(0)"}
+            onMouseEnter={e => { e.target.style.transform = "translateY(-2px) scale(1.02)"; e.target.style.boxShadow = `0 8px 40px ${C.accentGlow2}`; }}
+            onMouseLeave={e => { e.target.style.transform = "translateY(0) scale(1)"; e.target.style.boxShadow = `0 4px 32px ${C.accentGlow2}`; }}
           >
             Start Assessment →
           </button>
 
-          <div style={{ marginTop: "64px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", textAlign: "left" }} className="results-metrics">
+          <div className="intro-cards" style={{ marginTop: "64px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", textAlign: "left" }}>
             {DOMAINS.slice(0, 4).map((d, i) => (
-              <div key={i} style={{ ...cardStyle, padding: "20px" }}>
+              <div key={i} className="domain-preview-card" style={{ ...cardStyle, padding: "20px", position: "relative", overflow: "hidden" }}>
+                <div style={{
+                  position: "absolute", top: 0, left: "16px", right: "16px", height: "2px",
+                  background: `linear-gradient(90deg, ${C.accent}, ${C.cyan})`,
+                  borderRadius: "0 0 2px 2px",
+                }} />
                 <span style={{ fontSize: "20px" }}>{d.icon}</span>
-                <div style={{ fontFamily: C.sans, fontSize: "13px", color: C.text, marginTop: "8px" }}>{d.name}</div>
+                <div style={{ fontFamily: C.sans, fontSize: "13px", color: C.text, marginTop: "8px", fontWeight: 500 }}>{d.name}</div>
                 <div style={{ fontFamily: C.mono, fontSize: "10px", color: C.textDim, marginTop: "4px" }}>APQC {d.apqc}</div>
               </div>
             ))}
@@ -616,14 +722,21 @@ export default function ClearLedgerDiagnostic() {
             <div style={{ fontFamily: C.sans, fontSize: "13px", color: C.textMid, marginBottom: "14px", fontWeight: 500 }}>Company Tier *</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px" }} className="results-metrics">
               {Object.entries(TIERS).map(([key, t]) => (
-                <button key={key} onClick={() => setTier(key)} style={{
+                <button key={key} onClick={() => setTier(key)} className="tier-card" style={{
                   ...cardStyle,
                   cursor: "pointer",
                   border: `1px solid ${tier === key ? t.color : C.border}`,
-                  background: tier === key ? `${t.color}10` : C.bgCard,
-                  transition: "all 0.2s",
+                  background: tier === key ? `${t.color}15` : C.bgCard,
                   textAlign: "left",
+                  position: "relative",
+                  overflow: "hidden",
                 }}>
+                  {tier === key && (
+                    <div style={{
+                      position: "absolute", top: 0, left: 0, right: 0, height: "2px",
+                      background: `linear-gradient(90deg, ${t.color}, ${t.color}88)`,
+                    }} />
+                  )}
                   <div style={{ fontFamily: C.sans, fontSize: "14px", color: tier === key ? t.color : C.text, fontWeight: 500 }}>{t.label}</div>
                   <div style={{ fontFamily: C.mono, fontSize: "11px", color: C.textDim, marginTop: "4px" }}>{t.sub}</div>
                   <div style={{ fontFamily: C.mono, fontSize: "10px", color: C.textDim, marginTop: "8px" }}>Target: {t.target.toFixed(1)}</div>
@@ -649,13 +762,15 @@ export default function ClearLedgerDiagnostic() {
                     value={company[f.key]}
                     onChange={e => setCompany(prev => ({ ...prev, [f.key]: e.target.value }))}
                     placeholder={f.placeholder}
+                    aria-label={f.label}
                     style={{
                       width: "100%", padding: "10px 14px", borderRadius: C.radiusSm,
                       background: C.surface, border: `1px solid ${C.border}`,
                       color: C.text, fontFamily: C.sans, fontSize: "14px", outline: "none",
+                      transition: "border-color 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s cubic-bezier(0.16,1,0.3,1)",
                     }}
-                    onFocus={e => e.target.style.borderColor = C.accent}
-                    onBlur={e => e.target.style.borderColor = C.border}
+                    onFocus={e => { e.target.style.borderColor = C.accent; e.target.style.boxShadow = `0 0 0 3px ${C.accent}20`; }}
+                    onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
                   />
                 </div>
               ))}
@@ -669,8 +784,12 @@ export default function ClearLedgerDiagnostic() {
                 padding: "14px 32px", borderRadius: C.radiusSm, border: "none", cursor: tier ? "pointer" : "not-allowed",
                 background: tier ? `linear-gradient(135deg, ${C.accent}, ${C.accentDark})` : C.surface,
                 color: tier ? "white" : C.textDim, fontFamily: C.sans, fontSize: "14px", fontWeight: 500,
-                opacity: tier ? 1 : 0.5, transition: "all 0.2s",
+                opacity: tier ? 1 : 0.5,
+                transition: "transform 0.3s cubic-bezier(0.16,1,0.3,1), opacity 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s cubic-bezier(0.16,1,0.3,1)",
+                boxShadow: tier ? `0 4px 24px ${C.accentGlow2}` : "none",
               }}
+              onMouseEnter={e => { if (tier) { e.target.style.transform = "translateY(-1px) scale(1.02)"; e.target.style.boxShadow = `0 8px 32px ${C.accentGlow2}`; } }}
+              onMouseLeave={e => { if (tier) { e.target.style.transform = "translateY(0) scale(1)"; e.target.style.boxShadow = `0 4px 24px ${C.accentGlow2}`; } }}
             >
               Begin Assessment →
             </button>
@@ -687,14 +806,15 @@ export default function ClearLedgerDiagnostic() {
               const domainAnswered = d.questions.filter((_, qi) => answers[`${d.id}-${qi}`]).length;
               const complete = domainAnswered === d.questions.length;
               return (
-                <button key={d.id} onClick={() => { setCurrentDomain(i); setCurrentQuestion(0); }}
+                <button key={d.id} onClick={() => { setCurrentDomain(i); setCurrentQuestion(0); }} className="domain-tab"
                   style={{
-                    padding: "8px 14px", borderRadius: C.radiusSm, border: "none", cursor: "pointer",
-                    background: i === currentDomain ? C.accent : complete ? C.greenDim : C.bgCard,
+                    padding: "10px 16px", borderRadius: C.radiusSm, border: "none", cursor: "pointer",
+                    background: i === currentDomain ? `linear-gradient(135deg, ${C.accent}, ${C.accentDark})` : complete ? C.greenDim : C.bgCard,
                     color: i === currentDomain ? "white" : complete ? C.green : C.textDim,
                     fontFamily: C.sans, fontSize: "12px", fontWeight: 500,
-                    whiteSpace: "nowrap", transition: "all 0.2s",
+                    whiteSpace: "nowrap",
                     display: "flex", alignItems: "center", gap: "6px",
+                    boxShadow: i === currentDomain ? `0 4px 16px ${C.accentGlow2}` : "none",
                   }}
                 >
                   <span style={{ fontSize: "14px" }}>{d.icon}</span>
@@ -713,7 +833,15 @@ export default function ClearLedgerDiagnostic() {
             return (
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
-                  <span style={{ fontSize: "28px" }}>{domain.icon}</span>
+                  <div style={{
+                    width: "48px", height: "48px", borderRadius: "50%",
+                    background: `linear-gradient(135deg, ${C.accent}, ${C.cyan})`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    boxShadow: `0 0 0 3px ${C.accentGlow}`,
+                    fontSize: "22px",
+                  }}>
+                    {domain.icon}
+                  </div>
                   <div>
                     <h3 style={{ fontFamily: C.serif, fontSize: "24px", fontWeight: 400, color: C.text }}>{domain.name}</h3>
                     <span style={{ fontFamily: C.mono, fontSize: "11px", color: C.textDim }}>APQC {question.apqc} · Question {currentQuestion + 1} of {domain.questions.length}</span>
@@ -721,8 +849,13 @@ export default function ClearLedgerDiagnostic() {
                 </div>
 
                 {/* Question */}
-                <div style={{ ...cardStyle, marginTop: "20px", marginBottom: "24px" }}>
-                  <p style={{ fontFamily: C.sans, fontSize: "16px", color: C.text, lineHeight: 1.6, marginBottom: "24px" }}>
+                <div style={{ ...cardStyle, marginTop: "20px", marginBottom: "24px", position: "relative", overflow: "hidden" }}>
+                  <div style={{
+                    position: "absolute", top: 0, left: 0, width: "3px", bottom: 0,
+                    background: `linear-gradient(180deg, ${C.accent}, ${C.cyan})`,
+                    borderRadius: "0 2px 2px 0",
+                  }} />
+                  <p style={{ fontFamily: C.sans, fontSize: "16px", color: C.text, lineHeight: 1.6, marginBottom: "24px", paddingLeft: "4px" }}>
                     {question.q}
                   </p>
 
@@ -730,26 +863,26 @@ export default function ClearLedgerDiagnostic() {
                     {question.options.map((opt, oi) => {
                       const selected = answers[answerKey] === opt.score;
                       return (
-                        <button key={oi} onClick={() => selectAnswer(domain.id, currentQuestion, opt.score)}
+                        <button key={oi} onClick={() => selectAnswer(domain.id, currentQuestion, opt.score)} className="option-btn"
                           style={{
                             display: "flex", alignItems: "flex-start", gap: "14px",
                             padding: "14px 18px", borderRadius: C.radiusSm, cursor: "pointer",
-                            background: selected ? C.accentGlow : "rgba(255,255,255,0.02)",
+                            background: selected ? `linear-gradient(135deg, ${C.accentGlow}, ${C.bgCard})` : "rgba(255,255,255,0.02)",
                             border: `1px solid ${selected ? C.accent : C.border}`,
-                            textAlign: "left", transition: "all 0.2s",
+                            textAlign: "left",
                             width: "100%",
                           }}
-                          onMouseEnter={e => { if (!selected) e.currentTarget.style.borderColor = C.borderHover; }}
-                          onMouseLeave={e => { if (!selected) e.currentTarget.style.borderColor = C.border; }}
+                          onMouseEnter={e => { if (!selected) { e.currentTarget.style.borderColor = C.borderHover; e.currentTarget.style.background = "rgba(255,255,255,0.04)"; } }}
+                          onMouseLeave={e => { if (!selected) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = "rgba(255,255,255,0.02)"; } }}
                         >
                           <div style={{
                             flex: "0 0 28px", height: "28px", borderRadius: "50%",
-                            background: selected ? C.accent : "transparent",
+                            background: selected ? `linear-gradient(135deg, ${C.accent}, ${C.accentDark})` : "transparent",
                             border: `2px solid ${selected ? C.accent : C.border}`,
                             display: "flex", alignItems: "center", justifyContent: "center",
                             fontFamily: C.mono, fontSize: "12px", fontWeight: 600,
                             color: selected ? "white" : C.textDim,
-                            transition: "all 0.2s",
+                            boxShadow: selected ? `0 0 12px ${C.accentGlow2}` : "none",
                           }}>
                             {opt.score}
                           </div>
@@ -775,16 +908,22 @@ export default function ClearLedgerDiagnostic() {
                       color: C.textMid, fontFamily: C.sans, fontSize: "13px",
                       cursor: (currentDomain === 0 && currentQuestion === 0) ? "not-allowed" : "pointer",
                       opacity: (currentDomain === 0 && currentQuestion === 0) ? 0.4 : 1,
+                      transition: "border-color 0.3s cubic-bezier(0.16,1,0.3,1), color 0.3s cubic-bezier(0.16,1,0.3,1)",
                     }}
+                    onMouseEnter={e => { if (!(currentDomain === 0 && currentQuestion === 0)) { e.target.style.borderColor = C.accent + "60"; e.target.style.color = C.accent; } }}
+                    onMouseLeave={e => { if (!(currentDomain === 0 && currentQuestion === 0)) { e.target.style.borderColor = C.border; e.target.style.color = C.textMid; } }}
                   >← Previous</button>
 
                   {answeredCount === totalQuestions ? (
-                    <button onClick={goToResults} style={{
+                    <button onClick={goToResults} className="pulse-glow" style={{
                       padding: "12px 28px", borderRadius: C.radiusSm, border: "none", cursor: "pointer",
                       background: `linear-gradient(135deg, ${C.green}, #2BC06A)`,
                       color: "white", fontFamily: C.sans, fontSize: "14px", fontWeight: 600,
-                      boxShadow: `0 4px 24px rgba(61,220,132,0.3)`,
-                    }}>View Results →</button>
+                      transition: "transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s cubic-bezier(0.16,1,0.3,1)",
+                    }}
+                      onMouseEnter={e => { e.target.style.transform = "scale(1.02)"; }}
+                      onMouseLeave={e => { e.target.style.transform = "scale(1)"; }}
+                    >View Results →</button>
                   ) : (
                     <button onClick={() => {
                       if (currentQuestion < domain.questions.length - 1) setCurrentQuestion(currentQuestion + 1);
@@ -792,8 +931,13 @@ export default function ClearLedgerDiagnostic() {
                     }}
                       style={{
                         padding: "10px 20px", borderRadius: C.radiusSm, border: "none", cursor: "pointer",
-                        background: C.accent, color: "white", fontFamily: C.sans, fontSize: "13px",
+                        background: `linear-gradient(135deg, ${C.accent}, ${C.accentDark})`,
+                        color: "white", fontFamily: C.sans, fontSize: "13px",
+                        transition: "transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s cubic-bezier(0.16,1,0.3,1)",
+                        boxShadow: `0 4px 16px ${C.accentGlow2}`,
                       }}
+                      onMouseEnter={e => { e.target.style.transform = "translateY(-1px) scale(1.02)"; e.target.style.boxShadow = `0 8px 24px ${C.accentGlow2}`; }}
+                      onMouseLeave={e => { e.target.style.transform = "translateY(0) scale(1)"; e.target.style.boxShadow = `0 4px 16px ${C.accentGlow2}`; }}
                     >Next →</button>
                   )}
                 </div>
@@ -811,14 +955,19 @@ export default function ClearLedgerDiagnostic() {
             <div style={{ fontFamily: C.mono, fontSize: "11px", color: C.accent, textTransform: "uppercase", letterSpacing: "2px", marginBottom: "12px" }}>
               Your OtC Maturity Score
             </div>
-            <div style={{
+            <div className="pulse-glow" style={{
               display: "inline-flex", alignItems: "center", justifyContent: "center",
-              width: "140px", height: "140px", borderRadius: "50%",
-              border: `3px solid ${maturityColor}`,
-              boxShadow: `0 0 40px ${maturityColor}30`,
+              width: "150px", height: "150px", borderRadius: "50%",
+              padding: "3px",
+              background: `linear-gradient(135deg, ${maturityColor}, ${maturityColor}88, ${maturityColor})`,
               marginBottom: "16px",
             }}>
-              <div>
+              <div style={{
+                width: "100%", height: "100%", borderRadius: "50%",
+                background: C.bg,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexDirection: "column",
+              }}>
                 <div style={{ fontFamily: C.serif, fontSize: "48px", fontWeight: 300, color: maturityColor }}>{overallScore.toFixed(1)}</div>
                 <div style={{ fontFamily: C.mono, fontSize: "10px", color: C.textDim }}>/ 5.0</div>
               </div>
@@ -833,7 +982,12 @@ export default function ClearLedgerDiagnostic() {
           </div>
 
           {/* Domain Scorecard */}
-          <div style={{ ...cardStyle, marginBottom: "28px" }}>
+          <div style={{ ...cardStyle, marginBottom: "28px", position: "relative", overflow: "hidden" }}>
+            <div style={{
+              position: "absolute", top: 0, left: "24px", right: "24px", height: "2px",
+              background: `linear-gradient(90deg, ${C.accent}, ${C.cyan})`,
+              borderRadius: "0 0 2px 2px",
+            }} />
             <div style={{ fontFamily: C.mono, fontSize: "11px", color: C.accent, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "24px" }}>
               Domain Scorecard
             </div>
@@ -856,7 +1010,11 @@ export default function ClearLedgerDiagnostic() {
               { label: "Domains Below Target", val: domainScores.filter(d => d.score < target - 0.5).length, total: 8, color: C.red },
               { label: "Quick Wins Found", val: quickWins.length, total: null, color: C.cyan },
             ].map((m, i) => (
-              <div key={i} style={{ ...cardStyle, padding: "20px", textAlign: "center" }}>
+              <div key={i} className="metric-card" style={{ ...cardStyle, padding: "20px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+                <div style={{
+                  position: "absolute", top: "12px", left: 0, right: "50%", height: "2px",
+                  background: `linear-gradient(90deg, ${m.color}, transparent)`,
+                }} />
                 <div style={{ fontFamily: C.serif, fontSize: "32px", fontWeight: 300, color: m.color }}>{m.val}</div>
                 <div style={{ fontFamily: C.sans, fontSize: "11px", color: C.textDim, marginTop: "4px" }}>{m.label}</div>
               </div>
@@ -865,24 +1023,35 @@ export default function ClearLedgerDiagnostic() {
 
           {/* Quick Wins */}
           {quickWins.length > 0 && (
-            <div style={{ ...cardStyle, marginBottom: "28px", border: `1px solid ${C.green}20` }}>
+            <div style={{ ...cardStyle, marginBottom: "28px", border: `1px solid ${C.green}30`, position: "relative", overflow: "hidden" }}>
+              <div style={{
+                position: "absolute", top: 0, left: "24px", right: "24px", height: "2px",
+                background: `linear-gradient(90deg, ${C.green}, ${C.cyan})`,
+                borderRadius: "0 0 2px 2px",
+              }} />
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "20px" }}>
-                <span style={{ fontSize: "18px" }}>⚡</span>
-                <span style={{ fontFamily: C.mono, fontSize: "11px", color: C.green, textTransform: "uppercase", letterSpacing: "1.5px" }}>
+                <div style={{
+                  width: "32px", height: "32px", borderRadius: "50%",
+                  background: C.greenDim,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "14px",
+                }}>⚡</div>
+                <span style={{ fontFamily: C.mono, fontSize: "11px", color: C.green, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 600 }}>
                   Priority Quick Wins
                 </span>
               </div>
               {quickWins.map((qw, i) => (
                 <div key={i} style={{
-                  padding: "16px 20px", background: C.greenDim, borderRadius: C.radiusSm,
+                  padding: "16px 20px", background: `linear-gradient(135deg, ${C.greenDim}, transparent)`,
+                  borderRadius: C.radiusSm,
                   marginBottom: i < quickWins.length - 1 ? "12px" : 0,
-                  border: `1px solid rgba(61,220,132,0.1)`,
+                  border: `1px solid rgba(61,220,132,0.12)`,
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
                     <div style={{ fontFamily: C.sans, fontSize: "14px", color: C.text, fontWeight: 500 }}>{qw.title}</div>
-                    <span style={{ fontFamily: C.mono, fontSize: "10px", color: C.textDim, whiteSpace: "nowrap" }}>{qw.toolkit}</span>
+                    <span style={{ fontFamily: C.mono, fontSize: "10px", color: C.textDim, whiteSpace: "nowrap", padding: "2px 8px", background: "rgba(255,255,255,0.04)", borderRadius: "4px" }}>{qw.toolkit}</span>
                   </div>
-                  <div style={{ fontFamily: C.sans, fontSize: "13px", color: C.textDim, lineHeight: 1.5 }}>{qw.desc}</div>
+                  <div style={{ fontFamily: C.sans, fontSize: "13px", color: C.textMid, lineHeight: 1.5 }}>{qw.desc}</div>
                 </div>
               ))}
             </div>
@@ -897,27 +1066,38 @@ export default function ClearLedgerDiagnostic() {
               {packages.map(pkg => {
                 const isRec = pkg.key === recommendedPackage;
                 return (
-                  <div key={pkg.key} style={{
+                  <div key={pkg.key} className="package-card" style={{
                     ...cardStyle,
-                    border: `1px solid ${isRec ? C.accent : C.border}`,
-                    background: isRec ? C.bgCard2 : C.bgCard,
+                    border: `1px solid ${isRec ? C.accent + "50" : C.border}`,
+                    background: isRec ? `linear-gradient(135deg, ${C.bgCard2}, ${C.bgCard})` : C.bgCard,
                     position: "relative",
+                    overflow: "hidden",
                   }}>
                     {isRec && (
                       <div style={{
-                        position: "absolute", top: "-1px", left: "50%", transform: "translateX(-50%)",
-                        background: C.accent, color: "white", fontFamily: C.mono, fontSize: "9px",
-                        padding: "3px 12px", borderRadius: "0 0 6px 6px", letterSpacing: "1px",
-                      }}>RECOMMENDED</div>
+                        position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
+                        background: `linear-gradient(135deg, ${C.accent}, ${C.accentDark})`,
+                        color: "white", fontFamily: C.mono, fontSize: "9px",
+                        padding: "5px 16px", borderRadius: "0 0 8px 8px", letterSpacing: "1.5px",
+                        boxShadow: `0 4px 12px ${C.accentGlow2}`,
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                      }}>Recommended</div>
                     )}
-                    <h4 style={{ fontFamily: C.serif, fontSize: "20px", fontWeight: 400, color: C.text, marginTop: isRec ? "10px" : 0, marginBottom: "6px" }}>{pkg.name}</h4>
-                    <div style={{ fontFamily: C.mono, fontSize: "17px", color: C.accent, marginBottom: "4px" }}>{pkg.price}</div>
+                    <h4 style={{ fontFamily: C.serif, fontSize: "20px", fontWeight: 400, color: C.text, marginTop: isRec ? "18px" : 0, marginBottom: "6px" }}>{pkg.name}</h4>
+                    <div style={{ fontFamily: C.mono, fontSize: "17px", color: C.accent, marginBottom: "4px", fontWeight: 600 }}>{pkg.price}</div>
                     <div style={{ fontFamily: C.mono, fontSize: "11px", color: C.textDim, marginBottom: "14px" }}>{pkg.timeline}</div>
                     <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.cyan, marginBottom: "16px", padding: "8px 10px", background: C.cyanDim, borderRadius: C.radiusSm }}>{pkg.match}</div>
                     <ul style={{ listStyle: "none" }}>
                       {pkg.features.map((f, j) => (
-                        <li key={j} style={{ fontFamily: C.sans, fontSize: "12px", color: C.textDim, padding: "4px 0", display: "flex", gap: "6px" }}>
-                          <span style={{ color: C.green, fontSize: "10px", marginTop: "3px" }}>✓</span>{f}
+                        <li key={j} style={{ fontFamily: C.sans, fontSize: "12px", color: C.textDim, padding: "5px 0", display: "flex", gap: "8px", borderBottom: j < pkg.features.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                          <span style={{
+                            color: C.green, fontSize: "10px", marginTop: "3px",
+                            display: "inline-flex", alignItems: "center", justifyContent: "center",
+                            width: "16px", height: "16px", borderRadius: "50%", background: C.greenDim,
+                            flexShrink: 0, fontWeight: 700,
+                          }}>✓</span>
+                          {f}
                         </li>
                       ))}
                     </ul>
@@ -931,31 +1111,50 @@ export default function ClearLedgerDiagnostic() {
           <div style={{
             ...cardStyle, textAlign: "center",
             background: `linear-gradient(135deg, ${C.accentGlow}, ${C.accentGlow2})`,
-            border: `1px solid ${C.accent}30`,
+            border: `1px solid ${C.accent}40`,
+            position: "relative",
+            overflow: "hidden",
           }}>
-            <h3 style={{ fontFamily: C.serif, fontSize: "24px", fontWeight: 300, color: C.text, marginBottom: "12px" }}>
-              Ready to close the gaps?
-            </h3>
-            <p style={{ fontFamily: C.sans, fontSize: "14px", color: C.textDim, marginBottom: "24px", maxWidth: "500px", margin: "0 auto 24px" }}>
-              Book a 30-minute call to walk through your results and discuss next steps. No obligation, no pitch — just a frank conversation about your OtC process.
-            </p>
-            <div style={{ display: "flex", justifyContent: "center", gap: "14px", flexWrap: "wrap" }}>
-              <a href="https://a1ttvahfc4.calendesk.net" target="_blank" rel="noopener noreferrer" style={{
-                padding: "14px 32px", borderRadius: C.radiusSm, textDecoration: "none",
-                background: `linear-gradient(135deg, ${C.accent}, ${C.accentDark})`,
-                color: "white", fontFamily: C.sans, fontSize: "14px", fontWeight: 500,
-                boxShadow: `0 4px 24px ${C.accentGlow2}`,
-              }}>Book a Call</a>
-              <button onClick={() => { setScreen("intro"); setAnswers({}); setTier(null); setCurrentDomain(0); setCurrentQuestion(0); scrollToTop(); }} style={{
-                padding: "14px 28px", borderRadius: C.radiusSm, cursor: "pointer",
-                background: "transparent", border: `1px solid ${C.border}`,
-                color: C.textMid, fontFamily: C.sans, fontSize: "14px",
-              }}>Retake Assessment</button>
+            <div style={{
+              position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+              width: "400px", height: "400px", borderRadius: "50%",
+              background: `radial-gradient(circle, ${C.accentGlow2} 0%, transparent 70%)`,
+              pointerEvents: "none",
+            }} />
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <h3 style={{ fontFamily: C.serif, fontSize: "24px", fontWeight: 300, color: C.text, marginBottom: "12px" }}>
+                Ready to close the gaps?
+              </h3>
+              <p style={{ fontFamily: C.sans, fontSize: "14px", color: C.textDim, marginBottom: "24px", maxWidth: "500px", margin: "0 auto 24px" }}>
+                Book a 30-minute call to walk through your results and discuss next steps. No obligation, no pitch — just a frank conversation about your OtC process.
+              </p>
+              <div style={{ display: "flex", justifyContent: "center", gap: "14px", flexWrap: "wrap" }}>
+                <a href="https://a1ttvahfc4.calendesk.net" target="_blank" rel="noopener noreferrer" style={{
+                  padding: "14px 32px", borderRadius: C.radiusSm, textDecoration: "none",
+                  background: `linear-gradient(135deg, ${C.accent}, ${C.accentDark})`,
+                  color: "white", fontFamily: C.sans, fontSize: "14px", fontWeight: 500,
+                  boxShadow: `0 4px 24px ${C.accentGlow2}`,
+                  transition: "transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s cubic-bezier(0.16,1,0.3,1)",
+                  display: "inline-block",
+                }}
+                  onMouseEnter={e => { e.target.style.transform = "scale(1.02)"; e.target.style.boxShadow = `0 8px 32px ${C.accentGlow2}`; }}
+                  onMouseLeave={e => { e.target.style.transform = "scale(1)"; e.target.style.boxShadow = `0 4px 24px ${C.accentGlow2}`; }}
+                >Book a Call</a>
+                <button onClick={() => { setScreen("intro"); setAnswers({}); setTier(null); setCurrentDomain(0); setCurrentQuestion(0); scrollToTop(); }} style={{
+                  padding: "14px 28px", borderRadius: C.radiusSm, cursor: "pointer",
+                  background: "transparent", border: `1px solid ${C.border}`,
+                  color: C.textMid, fontFamily: C.sans, fontSize: "14px",
+                  transition: "border-color 0.3s cubic-bezier(0.16,1,0.3,1), color 0.3s cubic-bezier(0.16,1,0.3,1), transform 0.3s cubic-bezier(0.16,1,0.3,1)",
+                }}
+                  onMouseEnter={e => { e.target.style.borderColor = C.accent + "60"; e.target.style.color = C.accent; e.target.style.transform = "scale(1.02)"; }}
+                  onMouseLeave={e => { e.target.style.borderColor = C.border; e.target.style.color = C.textMid; e.target.style.transform = "scale(1)"; }}
+                >Retake Assessment</button>
+              </div>
             </div>
           </div>
 
           {/* Footer */}
-          <footer style={{ textAlign: "center", marginTop: "48px", padding: "24px", borderTop: `1px solid ${C.border}` }}>
+          <footer style={{ textAlign: "center", marginTop: "48px", padding: "32px 24px 0", borderTop: `1px solid ${C.border}` }}>
             <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
               <LogoMark size={18} />
               <span style={{ fontFamily: C.serif, fontSize: "14px", color: C.textDim }}>ClearLedger</span>
@@ -964,7 +1163,13 @@ export default function ClearLedgerDiagnostic() {
               Assessment methodology aligned to APQC Process Classification Framework v8.0
             </div>
             <div style={{ fontFamily: C.sans, fontSize: "11px", color: C.textDim, marginTop: "8px" }}>
-              © 2026 ClearLedger. All rights reserved. · <a href="/legal/?tab=privacy" style={{ color: C.textDim, textDecoration: "none" }}>Privacy</a> · <a href="/legal/?tab=terms" style={{ color: C.textDim, textDecoration: "none" }}>Terms</a>
+              © 2026 ClearLedger. All rights reserved. · <a href="/legal/?tab=privacy" style={{ color: C.textDim, textDecoration: "none", transition: "color 0.3s cubic-bezier(0.16,1,0.3,1)" }}
+                onMouseEnter={e => e.target.style.color = C.accent}
+                onMouseLeave={e => e.target.style.color = C.textDim}
+              >Privacy</a> · <a href="/legal/?tab=terms" style={{ color: C.textDim, textDecoration: "none", transition: "color 0.3s cubic-bezier(0.16,1,0.3,1)" }}
+                onMouseEnter={e => e.target.style.color = C.accent}
+                onMouseLeave={e => e.target.style.color = C.textDim}
+              >Terms</a>
             </div>
           </footer>
         </div>
