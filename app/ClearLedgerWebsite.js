@@ -934,7 +934,7 @@ export default function ClearLedgerWebsite() {
               </p>
               <div style={{ fontFamily: C.mono, fontSize: "11px", color: C.textDim, marginTop: "12px" }}>Warsaw · Global Delivery</div>
               <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.textDim, marginTop: "8px" }}>
-                <a href="mailto:hello@clearledger.com" style={{ color: C.accent, textDecoration: "none" }}>hello@clearledger.com</a>
+                <a href="mailto:stoic.nazim20@gmail.com" style={{ color: C.accent, textDecoration: "none" }}>stoic.nazim20@gmail.com</a>
               </div>
             </div>
 
