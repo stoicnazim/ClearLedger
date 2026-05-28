@@ -447,6 +447,9 @@ export default function ClearLedgerDiagnostic() {
   const [currentDomain, setCurrentDomain] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [showDetail, setShowDetail] = useState(null);
+  const [reportEmail, setReportEmail] = useState("");
+  const [sendingReport, setSendingReport] = useState(false);
+  const [reportSent, setReportSent] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const topRef = useRef(null);
 
@@ -1105,6 +1108,97 @@ export default function ClearLedgerDiagnostic() {
                 );
               })}
             </div>
+          </div>
+
+          {/* Send Report */}
+          <div style={{ ...cardStyle, marginBottom: "28px", position: "relative", overflow: "hidden" }}>
+            <div style={{
+              position: "absolute", top: 0, left: "24px", right: "24px", height: "2px",
+              background: `linear-gradient(90deg, ${C.accent}, ${C.cyan})`,
+              borderRadius: "0 0 2px 2px",
+            }} />
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
+              <div style={{
+                width: "32px", height: "32px", borderRadius: "50%",
+                background: C.accentGlow, display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "14px",
+              }}>📧</div>
+              <div>
+                <div style={{ fontFamily: C.mono, fontSize: "11px", color: C.accent, textTransform: "uppercase", letterSpacing: "1.5px" }}>
+                  Email My Report
+                </div>
+                <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.textDim, marginTop: "2px" }}>
+                  Get a premium PDF summary delivered to your inbox
+                </div>
+              </div>
+            </div>
+            {reportSent ? (
+              <div style={{
+                padding: "16px 20px", background: C.greenDim, borderRadius: C.radiusSm,
+                border: `1px solid rgba(61,220,132,0.15)`, textAlign: "center",
+              }}>
+                <div style={{ fontFamily: C.sans, fontSize: "14px", color: C.green, fontWeight: 500 }}>✓ Report sent! Check your inbox.</div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: "10px" }}>
+                <input
+                  type="email"
+                  placeholder="your@email.com"
+                  value={reportEmail}
+                  onChange={e => setReportEmail(e.target.value)}
+                  style={{
+                    flex: 1, padding: "12px 16px", borderRadius: C.radiusSm,
+                    background: C.surface, border: `1px solid ${C.border}`,
+                    color: C.text, fontFamily: C.sans, fontSize: "14px",
+                    outline: "none", transition: "border-color 0.3s cubic-bezier(0.16,1,0.3,1)",
+                  }}
+                  onFocus={e => e.target.style.borderColor = C.accent}
+                  onBlur={e => e.target.style.borderColor = C.border}
+                />
+                <button
+                  onClick={async () => {
+                    if (!reportEmail || sendingReport) return;
+                    setSendingReport(true);
+                    try {
+                      const res = await fetch('/api/send-report', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          email: reportEmail,
+                          overallScore: overallScore,
+                          maturityLevel: maturityLevel,
+                          maturityColor: maturityColor,
+                          domainScores: domainScores,
+                          quickWins: quickWins,
+                          recommendedPkg: recommendedPackage,
+                          target: target,
+                          company: company,
+                          tier: tier,
+                        }),
+                      });
+                      if (res.ok) {
+                        setReportSent(true);
+                      }
+                    } catch (e) {
+                      console.error(e);
+                    }
+                    setSendingReport(false);
+                  }}
+                  disabled={sendingReport}
+                  style={{
+                    padding: "12px 24px", borderRadius: C.radiusSm, border: "none", cursor: "pointer",
+                    background: `linear-gradient(135deg, ${C.accent}, ${C.accentDark})`,
+                    color: "white", fontFamily: C.sans, fontSize: "14px", fontWeight: 500,
+                    whiteSpace: "nowrap", opacity: sendingReport ? 0.7 : 1,
+                    transition: "transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s cubic-bezier(0.16,1,0.3,1)",
+                  }}
+                  onMouseEnter={e => { if (!sendingReport) { e.target.style.transform = "scale(1.02)"; e.target.style.boxShadow = `0 4px 20px ${C.accentGlow2}`; }}}
+                  onMouseLeave={e => { e.target.style.transform = "scale(1)"; e.target.style.boxShadow = "none"; }}
+                >
+                  {sendingReport ? "Sending..." : "Send Report"}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* CTA */}
