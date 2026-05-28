@@ -9,7 +9,7 @@ const C = {
   border: "rgba(255,255,255,0.06)",
   borderHover: "rgba(255,255,255,0.12)",
   text: "#E8E6F0",
-  textDim: "rgba(232,230,240,0.55)",
+  textDim: "rgba(232,230,240,0.62)",
   textMid: "rgba(232,230,240,0.75)",
   accent: "#6B5CE7",
   accentBright: "#8677F0",
@@ -24,8 +24,8 @@ const C = {
   amberDim: "rgba(255,171,64,0.1)",
   red: "#FF6B6B",
   serif: "'Fraunces', serif",
-  sans: "'General Sans', 'DM Sans', -apple-system, sans-serif",
-  mono: "'JetBrains Mono', monospace",
+  sans: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  mono: "ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace",
   radius: "14px",
   radiusSm: "8px",
 };
@@ -319,7 +319,7 @@ export default function ClearLedgerProducts() {
   ];
 
   return (
-    <div style={{ background: C.bg, color: C.text, minHeight: "100vh", fontFamily: C.sans, overflowX: "hidden" }}>
+    <main id="main-content" style={{ background: C.bg, color: C.text, minHeight: "100vh", fontFamily: C.sans, overflowX: "hidden" }}>
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         ::selection { background: ${C.accent}; color: white; }
@@ -334,7 +334,7 @@ export default function ClearLedgerProducts() {
       `}</style>
 
       {/* ─── NAV ───────────────────────────────────────────────── */}
-      <nav style={{
+      <nav aria-label="Main navigation" style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
         background: scrolled ? "rgba(8,9,14,0.92)" : "transparent",
         backdropFilter: scrolled ? "blur(20px)" : "none",
@@ -695,13 +695,13 @@ export default function ClearLedgerProducts() {
             <span style={{ fontFamily: C.sans, fontSize: "11px", color: C.textDim }}>· Warsaw · Global Delivery</span>
           </div>
           <div style={{ display: "flex", gap: "20px" }}>
-            {["Privacy", "Terms", "Cookies"].map(l => (
-              <a key={l} href={`/legal#${l.toLowerCase()}`} style={{ fontFamily: C.sans, fontSize: "11px", color: C.textDim, textDecoration: "none" }}>{l}</a>
+            {[{ label: "Privacy", tab: "privacy" }, { label: "Terms", tab: "terms" }, { label: "Cookies", tab: "cookies" }].map(l => (
+              <a key={l.label} href={`/legal/?tab=${l.tab}`} style={{ fontFamily: C.sans, fontSize: "11px", color: C.textDim, textDecoration: "none" }}>{l.label}</a>
             ))}
           </div>
           <span style={{ fontFamily: C.sans, fontSize: "11px", color: C.textDim }}>© 2026 ClearLedger</span>
         </div>
       </footer>
-    </div>
+    </main>
   );
 }

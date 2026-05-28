@@ -9,7 +9,7 @@ const C = {
   border: "rgba(255,255,255,0.06)",
   borderHover: "rgba(255,255,255,0.12)",
   text: "#E8E6F0",
-  textDim: "rgba(232,230,240,0.55)",
+  textDim: "rgba(232,230,240,0.62)",
   textMid: "rgba(232,230,240,0.75)",
   accent: "#6B5CE7",
   accentBright: "#8677F0",
@@ -23,8 +23,8 @@ const C = {
   red: "#FF6B6B",
   redDim: "rgba(255,107,107,0.08)",
   serif: "'Fraunces', serif",
-  sans: "'General Sans', 'DM Sans', -apple-system, sans-serif",
-  mono: "'JetBrains Mono', monospace",
+  sans: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  mono: "ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace",
   radius: "14px",
   radiusSm: "8px",
 };
@@ -313,7 +313,7 @@ export default function ClearLedgerWebsite() {
   ];
 
   return (
-    <div style={{ background: C.bg, color: C.text, minHeight: "100vh", fontFamily: C.sans, overflowX: "hidden" }}>
+    <main id="main-content" style={{ background: C.bg, color: C.text, minHeight: "100vh", fontFamily: C.sans, overflowX: "hidden" }}>
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         ::selection { background: ${C.accent}; color: white; }
@@ -339,7 +339,7 @@ export default function ClearLedgerWebsite() {
       `}</style>
 
       {/* ─── NAV ───────────────────────────────────────────────── */}
-      <nav style={{
+      <nav aria-label="Main navigation" style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
         background: scrolled ? "rgba(8,9,14,0.92)" : "transparent",
         backdropFilter: scrolled ? "blur(20px)" : "none",
@@ -372,7 +372,7 @@ export default function ClearLedgerWebsite() {
           </div>
 
           {/* Mobile hamburger */}
-          <button onClick={() => setMenuOpen(!menuOpen)} style={{
+          <button onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen} style={{
             display: "none", background: "none", border: "none", cursor: "pointer", padding: "8px",
             color: C.text, fontSize: "24px",
           }} className="mobile-menu-btn">
@@ -815,6 +815,7 @@ export default function ClearLedgerWebsite() {
                   <input
                     type="email"
                     placeholder="your@email.com"
+                    aria-label="Email address"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && handleEmailSubmit(e)}
@@ -878,13 +879,16 @@ export default function ClearLedgerWebsite() {
                 APQC-aligned Order-to-Cash advisory for growing companies. Diagnostics, process architecture, and implementation.
               </p>
               <div style={{ fontFamily: C.mono, fontSize: "11px", color: C.textDim, marginTop: "12px" }}>Warsaw · Global Delivery</div>
+              <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.textDim, marginTop: "8px" }}>
+                <a href="mailto:hello@clearledger.app" style={{ color: C.accent, textDecoration: "none" }}>hello@clearledger.app</a>
+              </div>
             </div>
 
             {/* Services */}
             <div>
               <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.textMid, fontWeight: 500, marginBottom: "16px", textTransform: "uppercase", letterSpacing: "1px" }}>Services</div>
               {["Health Check", "Accelerator", "Transformation", "Free Diagnostic"].map(l => (
-                <a key={l} href="#services" style={{ display: "block", fontFamily: C.sans, fontSize: "13px", color: C.textDim, textDecoration: "none", padding: "4px 0", transition: "color 0.2s" }}
+                <a key={l} href={l === "Free Diagnostic" ? "/diagnostic/" : "#services"} style={{ display: "block", fontFamily: C.sans, fontSize: "13px", color: C.textDim, textDecoration: "none", padding: "4px 0", transition: "color 0.2s" }}
                   onMouseEnter={e => e.target.style.color = C.text}
                   onMouseLeave={e => e.target.style.color = C.textDim}
                 >{l}</a>
@@ -930,6 +934,6 @@ export default function ClearLedgerWebsite() {
           </div>
         </div>
       </footer>
-    </div>
+    </main>
   );
 }

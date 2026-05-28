@@ -1,18 +1,18 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const C = {
   bg: "#08090E",
   bgCard: "#0D1117",
   border: "rgba(255,255,255,0.06)",
   text: "#E8E6F0",
-  textDim: "rgba(232,230,240,0.55)",
+  textDim: "rgba(232,230,240,0.62)",
   textMid: "rgba(232,230,240,0.75)",
   accent: "#6B5CE7",
   accentGlow: "rgba(107,92,231,0.12)",
   cyan: "#4FC3F7",
   serif: "'Fraunces', serif",
-  sans: "'General Sans', 'DM Sans', -apple-system, sans-serif",
-  mono: "'JetBrains Mono', monospace",
+  sans: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  mono: "ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace",
   radius: "14px",
   radiusSm: "8px",
 };
@@ -251,6 +251,14 @@ export default function LegalPages() {
   const [tab, setTab] = useState("privacy");
   const topRef = useRef(null);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
+    if (tabParam && ["privacy", "terms", "cookies"].includes(tabParam)) {
+      setTab(tabParam);
+    }
+  }, []);
+
   const tabs = [
     { key: "privacy", label: "Privacy Policy" },
     { key: "terms", label: "Terms of Service" },
@@ -258,7 +266,7 @@ export default function LegalPages() {
   ];
 
   return (
-    <div ref={topRef} style={{ background: C.bg, color: C.text, minHeight: "100vh", fontFamily: C.sans }}>
+    <main id="main-content" ref={topRef} style={{ background: C.bg, color: C.text, minHeight: "100vh", fontFamily: C.sans }}>
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         ::selection { background: ${C.accent}; color: white; }
@@ -321,6 +329,6 @@ export default function LegalPages() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

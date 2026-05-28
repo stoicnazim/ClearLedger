@@ -9,7 +9,7 @@ const C = {
   border: "rgba(255,255,255,0.06)",
   borderHover: "rgba(255,255,255,0.12)",
   text: "#E8E6F0",
-  textDim: "rgba(232,230,240,0.55)",
+  textDim: "rgba(232,230,240,0.62)",
   textMid: "rgba(232,230,240,0.75)",
   accent: "#6B5CE7",
   accentBright: "#8677F0",
@@ -25,8 +25,8 @@ const C = {
   red: "#FF6B6B",
   redDim: "rgba(255,107,107,0.08)",
   serif: "'Fraunces', serif",
-  sans: "'General Sans', 'DM Sans', -apple-system, sans-serif",
-  mono: "'JetBrains Mono', monospace",
+  sans: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  mono: "ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace",
   radius: "14px",
   radiusSm: "8px",
 };
@@ -507,7 +507,7 @@ export default function ClearLedgerDiagnostic() {
   const cardStyle = { background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: C.radius, padding: "28px" };
 
   return (
-    <div ref={topRef} style={{ background: C.bg, color: C.text, minHeight: "100vh", fontFamily: C.sans }}>
+    <main id="main-content" ref={topRef} style={{ background: C.bg, color: C.text, minHeight: "100vh", fontFamily: C.sans }}>
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         ::selection { background: ${C.accent}; color: white; }
@@ -955,7 +955,7 @@ export default function ClearLedgerDiagnostic() {
           </div>
 
           {/* Footer */}
-          <div style={{ textAlign: "center", marginTop: "48px", padding: "24px", borderTop: `1px solid ${C.border}` }}>
+          <footer style={{ textAlign: "center", marginTop: "48px", padding: "24px", borderTop: `1px solid ${C.border}` }}>
             <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
               <LogoMark size={18} />
               <span style={{ fontFamily: C.serif, fontSize: "14px", color: C.textDim }}>ClearLedger</span>
@@ -964,11 +964,11 @@ export default function ClearLedgerDiagnostic() {
               Assessment methodology aligned to APQC Process Classification Framework v8.0
             </div>
             <div style={{ fontFamily: C.sans, fontSize: "11px", color: C.textDim, marginTop: "8px" }}>
-              © 2026 ClearLedger. All rights reserved. · <a href="#" style={{ color: C.textDim }}>Privacy</a> · <a href="#" style={{ color: C.textDim }}>Terms</a>
+              © 2026 ClearLedger. All rights reserved. · <a href="/legal/?tab=privacy" style={{ color: C.textDim, textDecoration: "none" }}>Privacy</a> · <a href="/legal/?tab=terms" style={{ color: C.textDim, textDecoration: "none" }}>Terms</a>
             </div>
-          </div>
+          </footer>
         </div>
       )}
-    </div>
+    </main>
   );
 }
