@@ -809,16 +809,16 @@ export default function ClearLedgerWebsite() {
               <div>
                 <h3 style={{ fontFamily: C.serif, fontSize: "26px", fontWeight: 400, color: C.text, marginBottom: "4px" }}>Nazim Boukhouf</h3>
                 <div style={{ fontFamily: C.sans, fontSize: "13px", color: C.accent, marginBottom: "20px" }}>
-                  Finance & AR Operations Manager · Lean Six Sigma Black Belt
+                  Finance & AR Operations · Lean Six Sigma Black Belt
                 </div>
-                <p style={{ fontFamily: C.sans, fontSize: "13px", color: C.textDim, lineHeight: 1.7, marginBottom: "16px" }}>
-                  With 10+ years across the full Order-to-Cash cycle, Nazim has led AR teams of up to 90+ professionals across 25+ entities managing a €200M+ receivables portfolio. He has reduced DSO by 9 days, automated cash allocation to 85% touchless matching, and built a predictive cash collection platform that cut manual triage by 65%.
+                <p style={{ fontFamily: C.sans, fontSize: "14px", color: C.textDim, lineHeight: 1.8, marginBottom: "20px" }}>
+                  A decade in the trenches of enterprise Order-to-Cash — across three continents, three languages, and some of the most complex AR operations in EMEA. The kind of experience that reveals where processes bleed money and exactly how to stop it.
                 </p>
-                <p style={{ fontFamily: C.sans, fontSize: "13px", color: C.textDim, lineHeight: 1.7, marginBottom: "16px" }}>
-                  He speaks English, French, Arabic, Polish, and Spanish — and brings hands-on SAP S/4HANA expertise from Miele, Fujitsu, and prior roles across EMEA markets.
+                <p style={{ fontFamily: C.sans, fontSize: "14px", color: C.textDim, lineHeight: 1.8, marginBottom: "20px" }}>
+                  ClearLedger is what that experience built: a benchmark-driven OtC practice that treats finance operations like a system — measure it, tune it, prove it.
                 </p>
-                <p style={{ fontFamily: C.sans, fontSize: "13px", color: C.textDim, lineHeight: 1.7 }}>
-                  ClearLedger is his answer to what he wished existed earlier: a structured, benchmark-driven OtC advisory built for operators, not consultants.
+                <p style={{ fontFamily: C.sans, fontSize: "14px", color: C.textDim, lineHeight: 1.8 }}>
+                  No fluff. No mystery. Just a straight path from where your AR is to where it should be.
                 </p>
                 <div style={{ display: "flex", gap: "20px", marginTop: "24px" }}>
                   <a href="https://linkedin.com/in/nazim-boukhouf" target="_blank" rel="noopener noreferrer"
