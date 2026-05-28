@@ -975,18 +975,18 @@ export default function ClearLedgerWebsite() {
             <Reveal>
               <div>
                 <div style={{
-                  width: "100%", aspectRatio: "1 / 1.2", borderRadius: C.radius,
-                  padding: "3px",
+                  width: "100%", aspectRatio: "1 / 1", borderRadius: C.radius,
+                  padding: "4px",
                   background: `linear-gradient(135deg, ${C.accent}, ${C.cyan}, ${C.accent})`,
-                  maxHeight: "400px",
-                  boxShadow: `0 0 40px ${C.accentGlow2}`,
+                  maxWidth: "380px", margin: "0 auto",
+                  boxShadow: `0 0 60px ${C.accentGlow2}`,
                 }}>
                   <div style={{
-                    width: "100%", height: "100%", borderRadius: `calc(${C.radius} - 3px)`,
+                    width: "100%", height: "100%", borderRadius: `calc(${C.radius} - 4px)`,
                     overflow: "hidden",
                   }}>
                     <img src="/Headshot.jpg" alt="Nazim Boukhouf, founder of ClearLedger" style={{
-                      width: "100%", height: "100%", objectFit: "cover",
+                      width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%",
                     }} />
                   </div>
                 </div>
