@@ -779,6 +779,60 @@ export default function ClearLedgerWebsite() {
         </div>
       </section>
 
+      {/* ─── ABOUT ─────────────────────────────────────────────── */}
+      <section id="about" style={{ padding: "80px 0", borderTop: `1px solid ${C.border}` }}>
+        <div style={sectionStyle}>
+          <Reveal>
+            <div style={{ textAlign: "center", marginBottom: "48px" }}>
+              <div style={labelStyle}>Founder</div>
+              <h2 style={h2Style}>Built by a fellow finance operator</h2>
+            </div>
+          </Reveal>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "60px", alignItems: "start" }} className="stats-grid">
+            <Reveal>
+              <div>
+                <div style={{
+                  width: "100%", aspectRatio: "1 / 1.2", borderRadius: C.radius,
+                  background: `linear-gradient(135deg, ${C.bgCard2}, ${C.surface})`,
+                  border: `1px solid ${C.border}`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  maxHeight: "400px", overflow: "hidden",
+                }}>
+                  <div style={{ textAlign: "center", padding: "40px" }}>
+                    <div style={{ fontFamily: C.serif, fontSize: "64px", color: C.accent, marginBottom: "8px" }}>NB</div>
+                    <div style={{ fontFamily: C.mono, fontSize: "10px", color: C.textDim, letterSpacing: "2px", textTransform: "uppercase" }}>Photo placeholder</div>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <div>
+                <h3 style={{ fontFamily: C.serif, fontSize: "26px", fontWeight: 400, color: C.text, marginBottom: "4px" }}>Nazim Boukhouf</h3>
+                <div style={{ fontFamily: C.sans, fontSize: "13px", color: C.accent, marginBottom: "20px" }}>
+                  Finance & AR Operations Manager · Lean Six Sigma Black Belt
+                </div>
+                <p style={{ fontFamily: C.sans, fontSize: "13px", color: C.textDim, lineHeight: 1.7, marginBottom: "16px" }}>
+                  With 10+ years across the full Order-to-Cash cycle, Nazim has led AR teams of up to 90+ professionals across 25+ entities managing a €200M+ receivables portfolio. He has reduced DSO by 9 days, automated cash allocation to 85% touchless matching, and built a predictive cash collection platform that cut manual triage by 65%.
+                </p>
+                <p style={{ fontFamily: C.sans, fontSize: "13px", color: C.textDim, lineHeight: 1.7, marginBottom: "16px" }}>
+                  He speaks English, French, Arabic, Polish, and Spanish — and brings hands-on SAP S/4HANA expertise from Miele, Fujitsu, and prior roles across EMEA markets.
+                </p>
+                <p style={{ fontFamily: C.sans, fontSize: "13px", color: C.textDim, lineHeight: 1.7 }}>
+                  ClearLedger is his answer to what he wished existed earlier: a structured, benchmark-driven OtC advisory built for operators, not consultants.
+                </p>
+                <div style={{ display: "flex", gap: "20px", marginTop: "24px" }}>
+                  <a href="https://linkedin.com/in/nazim-boukhouf" target="_blank" rel="noopener noreferrer"
+                    style={{ fontFamily: C.sans, fontSize: "12px", color: C.accent, textDecoration: "none", transition: "color 0.2s" }}
+                    onMouseEnter={e => e.target.style.color = C.accentBright}
+                    onMouseLeave={e => e.target.style.color = C.accent}
+                  >LinkedIn →</a>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
       {/* ─── CTA WITH EMAIL CAPTURE ────────────────────────────── */}
       <section id="cta" style={{ padding: "100px 0", position: "relative", overflow: "hidden" }}>
         <div style={{
@@ -880,7 +934,7 @@ export default function ClearLedgerWebsite() {
               </p>
               <div style={{ fontFamily: C.mono, fontSize: "11px", color: C.textDim, marginTop: "12px" }}>Warsaw · Global Delivery</div>
               <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.textDim, marginTop: "8px" }}>
-                <a href="mailto:hello@clearledger.app" style={{ color: C.accent, textDecoration: "none" }}>hello@clearledger.app</a>
+                <a href="mailto:hello@clearledger.com" style={{ color: C.accent, textDecoration: "none" }}>hello@clearledger.com</a>
               </div>
             </div>
 
