@@ -1,9 +1,14 @@
 export default function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'application/json');
-  let body = '';
-  req.on('data', chunk => { body += chunk; });
+  const chunks = [];
+  req.on('data', chunk => { chunks.push(chunk); });
   req.on('end', () => {
-    res.status(200).json({ method: req.method, body, bodyLength: body.length });
+    const body = Buffer.concat(chunks).toString();
+    const headers = {};
+    for (const [k, v] of Object.entries(req.headers)) {
+      headers[k] = v;
+    }
+    res.status(200).json({ method: req.method, body, bodyLength: body.length, headers, chunkCount: chunks.length });
   });
 }
