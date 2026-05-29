@@ -132,7 +132,7 @@ export default function DiagnosticIntake({ activeTier, onTierChange, onNavigate 
             icon: domainIcons[d.id],
             score: scores[d.id]
           })),
-          quickWins: gaps.map(g => ({
+          quickWins: gaps.slice(0, 3).map(g => ({
             title: `${g.domain}: ${g.severity} Priority Gap`,
             desc: g.win
           })),

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "lucide-react": "^0.400.0",
+    "pdfkit": "^0.18.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "recharts": "^2.12.0",
