@@ -114,51 +114,45 @@ function buildEmailHtml(data) {
 </html>`;
 }
 
+function getRawBody(req) {
+  return new Promise((resolve) => {
+    const chunks = [];
+    req.on('data', chunk => chunks.push(chunk));
+    req.on('end', () => resolve(Buffer.concat(chunks).toString()));
+  });
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const raw = await new Promise((resolve, reject) => {
-      const chunks = [];
-      req.on('data', chunk => chunks.push(chunk));
-      req.on('end', () => resolve(Buffer.concat(chunks).toString()));
-      req.on('error', reject);
-    });
-    console.log('RAW_BODY_START:', JSON.stringify(raw.slice(0, 100)));
-    const { email, ...reportData } = JSON.parse(raw);
-
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
+    const raw = await getRawBody(req);
+    if (!raw || !raw.length) {
+      return res.status(400).json({ error: 'Empty body' });
     }
+    const parsed = JSON.parse(raw);
+    const { email, ...reportData } = parsed;
+
+    if (!email) return res.status(400).json({ error: 'Email is required' });
 
     const apiKey = process.env.RESEND_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: 'Email service not configured', detail: 'RESEND_API_KEY env var is not set' });
-    }
+    if (!apiKey) return res.status(500).json({ error: 'RESEND_API_KEY not configured' });
 
     const resend = new Resend(apiKey);
-    const html = buildEmailHtml(reportData);
-
     await resend.emails.send({
       from: 'ClearLedger <onboarding@resend.dev>',
       to: email,
       subject: `Your OtC Maturity Score: ${reportData.overallScore?.toFixed(1)}/5.0 — ClearLedger Report`,
-      html,
+      html: buildEmailHtml(reportData),
     });
 
     return res.status(200).json({ success: true });
   } catch (error) {
-    console.error('Send report error:', error);
-    return res.status(500).json({ error: 'Failed to send report', detail: error instanceof Error ? error.message : String(error) });
+    return res.status(500).json({ error: error.message || 'Failed' });
   }
 }
