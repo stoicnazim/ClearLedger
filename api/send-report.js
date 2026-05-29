@@ -139,7 +139,7 @@ export default async function handler(req, res) {
 
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'Email service not configured' });
+      return res.status(500).json({ error: 'Email service not configured', detail: 'RESEND_API_KEY env var is not set' });
     }
 
     const resend = new Resend(apiKey);
@@ -155,6 +155,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ success: true });
   } catch (error) {
     console.error('Send report error:', error);
-    return res.status(500).json({ error: 'Failed to send report' });
+    return res.status(500).json({ error: 'Failed to send report', detail: error instanceof Error ? error.message : String(error) });
   }
 }
