@@ -10,8 +10,8 @@ function AppWrapper() {
   const [transitioning, setTransitioning] = useState(false)
   const [initialTab, setInitialTab] = useState('dashboard')
 
-  const handleEnter = (tab) => {
-    setInitialTab(tab || 'diagnostic')
+  const handleEnter = () => {
+    setInitialTab('diagnostic')
     setTransitioning(true)
     setTimeout(() => setShowApp(true), 300)
   }
