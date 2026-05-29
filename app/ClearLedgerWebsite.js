@@ -483,12 +483,15 @@ export default function ClearLedgerWebsite() {
 
           {/* Desktop nav */}
           <div style={{ display: "flex", alignItems: "center", gap: "32px" }} className="desktop-nav">
-            {["Process", "Services", "ROI Calculator", "About"].map(l => (
-              <a key={l} href={`#${l.toLowerCase().replace(/ /g, "-")}`} className="nav-link" style={{ fontFamily: C.sans, fontSize: "13px", color: C.textMid, textDecoration: "none", transition: "color 0.3s cubic-bezier(0.16,1,0.3,1)" }}
-                onMouseEnter={e => e.target.style.color = C.text}
-                onMouseLeave={e => e.target.style.color = C.textMid}
-              >{l}</a>
-            ))}
+            {["Process", "Toolkits", "Services", "ROI Calculator", "About"].map(l => {
+              const href = l === "Toolkits" ? "/products/" : `#${l.toLowerCase().replace(/ /g, "-")}`;
+              return (
+                <a key={l} href={href} className="nav-link" style={{ fontFamily: C.sans, fontSize: "13px", color: C.textMid, textDecoration: "none", transition: "color 0.3s cubic-bezier(0.16,1,0.3,1)" }}
+                  onMouseEnter={e => e.target.style.color = C.text}
+                  onMouseLeave={e => e.target.style.color = C.textMid}
+                >{l}</a>
+              );
+            })}
             <a href="/diagnostic/" style={{
               fontFamily: C.sans, fontSize: "13px", fontWeight: 500, color: "white", textDecoration: "none",
               padding: "8px 20px", borderRadius: C.radiusSm,
@@ -523,13 +526,16 @@ export default function ClearLedgerWebsite() {
           borderTop: `1px solid ${C.border}`,
           pointerEvents: menuOpen ? "auto" : "none",
         }}>
-          {["Process", "Services", "ROI Calculator", "About"].map(l => (
-            <a key={l} href={`#${l.toLowerCase().replace(/ /g, "-")}`} onClick={() => setMenuOpen(false)}
-              style={{ display: "block", padding: "16px 0", fontFamily: C.sans, fontSize: "16px", color: C.textMid, textDecoration: "none", borderBottom: `1px solid ${C.border}` }}
-              onMouseEnter={e => e.target.style.color = C.text}
-              onMouseLeave={e => e.target.style.color = C.textMid}
-            >{l}</a>
-          ))}
+          {["Process", "Toolkits", "Services", "ROI Calculator", "About"].map(l => {
+            const href = l === "Toolkits" ? "/products/" : `#${l.toLowerCase().replace(/ /g, "-")}`;
+            return (
+              <a key={l} href={href} onClick={() => setMenuOpen(false)}
+                style={{ display: "block", padding: "16px 0", fontFamily: C.sans, fontSize: "16px", color: C.textMid, textDecoration: "none", borderBottom: `1px solid ${C.border}` }}
+                onMouseEnter={e => e.target.style.color = C.text}
+                onMouseLeave={e => e.target.style.color = C.textMid}
+              >{l}</a>
+            );
+          })}
           <a href="/diagnostic/" onClick={() => setMenuOpen(false)} style={{
             display: "block", textAlign: "center", marginTop: "24px", padding: "14px", borderRadius: C.radiusSm,
             background: `linear-gradient(135deg, ${C.accent}, ${C.accentDark})`,
@@ -1144,20 +1150,20 @@ export default function ClearLedgerWebsite() {
               </div>
             </div>
 
+            {/* Toolkits */}
+            <div>
+              <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.textMid, fontWeight: 500, marginBottom: "16px", textTransform: "uppercase", letterSpacing: "1px" }}>Toolkits</div>
+              <a href="/products/" className="footer-link" style={{ display: "block", fontFamily: C.sans, fontSize: "13px", color: C.textDim, textDecoration: "none", padding: "5px 0" }}>AR Dashboard</a>
+              <a href="/products/#business-case" className="footer-link" style={{ display: "block", fontFamily: C.sans, fontSize: "13px", color: C.textDim, textDecoration: "none", padding: "5px 0" }}>Business Case Builder</a>
+              <a href="/products/#pricing" className="footer-link" style={{ display: "block", fontFamily: C.sans, fontSize: "13px", color: C.textDim, textDecoration: "none", padding: "5px 0" }}>Pricing & Bundle</a>
+            </div>
+
             {/* Services */}
             <div>
               <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.textMid, fontWeight: 500, marginBottom: "16px", textTransform: "uppercase", letterSpacing: "1px" }}>Services</div>
               {["Health Check", "Accelerator", "Transformation", "Free Diagnostic"].map(l => (
                 <a key={l} href={l === "Free Diagnostic" ? "/diagnostic/" : "#services"} className="footer-link" style={{ display: "block", fontFamily: C.sans, fontSize: "13px", color: C.textDim, textDecoration: "none", padding: "5px 0" }}
                 >{l}</a>
-              ))}
-            </div>
-
-            {/* Expertise */}
-            <div>
-              <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.textMid, fontWeight: 500, marginBottom: "16px", textTransform: "uppercase", letterSpacing: "1px" }}>Expertise</div>
-              {["Collections & AR", "Cash Application", "Credit Management", "Deductions", "Treasury & WC"].map(l => (
-                <span key={l} className="footer-link" style={{ display: "block", fontFamily: C.sans, fontSize: "13px", color: C.textDim, padding: "5px 0", cursor: "default" }}>{l}</span>
               ))}
             </div>
 
