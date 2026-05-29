@@ -129,11 +129,12 @@ export default async function handler(req, res) {
 
   try {
     const raw = await new Promise((resolve, reject) => {
-      let body = '';
-      req.on('data', chunk => { body += chunk; });
-      req.on('end', () => resolve(body));
+      const chunks = [];
+      req.on('data', chunk => chunks.push(chunk));
+      req.on('end', () => resolve(Buffer.concat(chunks).toString()));
       req.on('error', reject);
     });
+    console.log('RAW_BODY_START:', JSON.stringify(raw.slice(0, 100)));
     const { email, ...reportData } = JSON.parse(raw);
 
     if (!email) {
