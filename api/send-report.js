@@ -128,9 +128,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const raw = Buffer.concat(chunks).toString();
+    const raw = await new Promise((resolve, reject) => {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => resolve(body));
+      req.on('error', reject);
+    });
     const { email, ...reportData } = JSON.parse(raw);
 
     if (!email) {
