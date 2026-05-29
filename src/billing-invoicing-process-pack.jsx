@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useMockDatabase } from './context/MockDatabaseContext';
-import { evaluateRules } from './ruleEngine';
 
 /* ─────────────────────────────────────────────────
    2.3 — Billing & Invoicing Process Pack
@@ -516,20 +514,12 @@ const raciText = (v) => { if (v === "I") return "rgba(255,255,255,0.35)"; return
 const stepTypeColor = (t, a) => { if (t === "start") return "#34D399"; if (t === "end") return "#EF4444"; if (t === "decision") return "#FBBF24"; if (t === "system") return "#60A5FA"; return a; };
 
 export default function BillingInvoicingProcessPack() {
-  const { sopRegistry } = useMockDatabase() || {};
   const [tier, setTier] = useState("mid");
   const [tab, setTab] = useState("sipoc");
   const [kpiFilter, setKpiFilter] = useState("All");
   const [showXref, setShowXref] = useState(false);
   const currentTier = TIERS.find((t) => t.key === tier);
   const accent = currentTier.accent;
-
-  const matchedRules = evaluateRules(sopRegistry || [], 'compliance', { xmlSchemaValid: true });
-  const sopGroups = {};
-  matchedRules.forEach(r => {
-    if (!sopGroups[r.sopId]) sopGroups[r.sopId] = { title: r.sopTitle, version: r.sopVersion, rules: [] };
-    sopGroups[r.sopId].rules.push(r);
-  });
 
   const renderSIPOC = () => {
     const data = SIPOC_DATA[tier];
@@ -578,36 +568,6 @@ export default function BillingInvoicingProcessPack() {
       <div style={{ minHeight: 400 }}>{tab === "sipoc" && renderSIPOC()}{tab === "swimlane" && renderSwimlane()}{tab === "raci" && renderRACI()}{tab === "sop" && renderSOP()}{tab === "kpi" && renderKPI()}</div>
       <div style={{ marginTop: 32, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 16 }}><button onClick={() => setShowXref(!showXref)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer", fontSize: 12, fontFamily: "'JetBrains Mono', monospace", display: "flex", alignItems: "center", gap: 8, padding: 0 }}><span style={{ transform: showXref ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s", display: "inline-block" }}>▸</span>Cross-Reference Index ({XREFS.length} linked deliverables)</button>{showXref && (<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 8, marginTop: 12 }}>{XREFS.map((xr) => (<div key={xr.code} style={{ display: "flex", gap: 10, padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 6, border: "1px solid rgba(255,255,255,0.04)" }}><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: accent, fontWeight: 600, whiteSpace: "nowrap" }}>{xr.code}</span><div><div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontWeight: 500 }}>{xr.name}</div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>{xr.relevance}</div></div></div>))}</div>)}</div>
       <div style={{ marginTop: 24, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.04)", display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", fontFamily: "'JetBrains Mono', monospace" }}>APQC PCF v8.0 · Hackett World-Class 2026 · ASC 606 / IFRS 15</span><span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", fontFamily: "'JetBrains Mono', monospace" }}>2.3 — Billing & Invoicing Process Pack · v1.1</span></div>
-
-      {Object.keys(sopGroups).length > 0 && (
-        <div style={{ marginTop: 20, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 16 }}>
-          <div style={{ borderLeft: `2px solid ${accent}`, padding: "16px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: accent, marginBottom: 12, textTransform: "uppercase", letterSpacing: 1, fontFamily: "'JetBrains Mono', monospace" }}>
-              ⚖ Governing SOP Protocols
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-              {Object.keys(sopGroups).map(sopId => {
-                const info = sopGroups[sopId];
-                return (
-                  <div key={sopId} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "12px 16px", minWidth: 240 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: accent, marginBottom: 4, fontFamily: "'JetBrains Mono', monospace" }}>
-                      {sopId} <span style={{ color: "rgba(255,255,255,0.35)", fontWeight: 400 }}>v{info.version}</span>
-                    </div>
-                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", marginBottom: 8, fontFamily: "'DM Sans', sans-serif" }}>{info.title}</div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                      {info.rules.map(r => (
-                        <span key={r.id} style={{ background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.75)", padding: "2px 8px", borderRadius: 4, fontSize: 9, fontFamily: "'JetBrains Mono', monospace" }}>
-                          {r.id} · {r.action.replace(/_/g, ' ')}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

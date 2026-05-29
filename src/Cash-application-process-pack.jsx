@@ -1,7 +1,5 @@
 import { useState, useCallback } from "react";
 import { useLiveActuals, getKpiActual } from "./liveActuals";
-import { useMockDatabase } from './context/MockDatabaseContext';
-import { evaluateRules } from './ruleEngine';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // CASH APPLICATION PROCESS PACK — Deliverable 1.2
@@ -817,13 +815,6 @@ function KPIView({ tier }) {
 export default function CashAppProcessPack() {
   const [tier, setTier] = useState("large");
   const [tab, setTab] = useState("sipoc");
-  const { sopRegistry } = useMockDatabase() || {};
-  const matchedRules = evaluateRules(sopRegistry || [], 'cash_app', { singleInvoice: true, exactMatch: true });
-  const sopGroups = {};
-  matchedRules.forEach(r => {
-    if (!sopGroups[r.sopId]) sopGroups[r.sopId] = { title: r.sopTitle, version: r.sopVersion, rules: [] };
-    sopGroups[r.sopId].rules.push(r);
-  });
 
   const renderTab = useCallback(() => {
     switch (tab) {
@@ -873,37 +864,6 @@ export default function CashAppProcessPack() {
       <div style={s.content}>
         {renderTab()}
       </div>
-
-      {/* SOP Rule Badges */}
-      {Object.keys(sopGroups).length > 0 && (
-        <div style={{ maxWidth: 1300, margin: "0 auto", padding: "0 28px 24px" }}>
-          <div style={{ background: T.bgCard, border: `1px solid ${T.borderLight}`, borderRadius: T.radiusLg, padding: 20, borderLeft: `3px solid ${T.gold}` }}>
-            <div style={{ fontSize: "0.72rem", fontWeight: 700, color: T.gold, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              ⚖ Governing SOP Protocols
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-              {Object.keys(sopGroups).map(sopId => {
-                const info = sopGroups[sopId];
-                return (
-                  <div key={sopId} style={{ background: T.bgHover, border: `1px solid ${T.goldMid}`, borderRadius: T.radius, padding: "12px 16px", minWidth: 240 }}>
-                    <div style={{ fontSize: "0.7rem", fontWeight: 700, color: T.gold, marginBottom: 4, fontFamily: T.mono }}>
-                      {sopId} <span style={{ color: T.t3, fontWeight: 400 }}>v{info.version}</span>
-                    </div>
-                    <div style={{ fontSize: "0.72rem", color: T.t2, marginBottom: 8, fontFamily: T.font }}>{info.title}</div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                      {info.rules.map(r => (
-                        <span key={r.id} style={{ background: T.bgActive, color: T.t1, padding: "2px 8px", borderRadius: T.radiusSm, fontSize: "0.62rem", fontFamily: T.mono }}>
-                          {r.id} · {r.action.replace(/_/g, ' ')}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,10 +1,6 @@
 node_modules
 dist
-.DS_Store
-*.local
 .next
 out
-
-.vercel
-
-session-summary-*.txt
+.DS_Store
+*.local

@@ -972,7 +972,7 @@ export default function ClearLedgerDiagnostic({ onClose }) {
               <span style={{ fontFamily: C.serif, fontSize: "14px", color: C.textDim }}>ClearLedger</span>
             </div>
             <div style={{ fontFamily: C.mono, fontSize: "10px", color: C.textDim }}>
-              Assessment methodology aligned to APQC Process Classification Framework v8.0
+              Assessment methodology aligned to APQC Process Classification Framework v7.4
             </div>
             <div style={{ fontFamily: C.sans, fontSize: "11px", color: C.textDim, marginTop: "8px" }}>
               © 2026 ClearLedger. All rights reserved. · <a href="#" style={{ color: C.textDim }}>Privacy</a> · <a href="#" style={{ color: C.textDim }}>Terms</a>

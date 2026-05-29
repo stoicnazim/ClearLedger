@@ -433,21 +433,16 @@ function SegmentationTab({ tier, accent }) {
     })
   }, [tier, customers, invoices, disputes, collectionActivities])
 
-  // Evaluate collections SOP rules from live invoice data for the selected segment
+  // Evaluate collections SOP rules for the selected segment
   const matchedRules = useMemo(() => {
-    const segScore = segmentScores[selected]
-    if (!segScore) return []
-    const lowComposite = segScore.composite < 50
-    const highDispute = segScore.disputeScore > 60
-    const lowRecency = segScore.recencyScore < 70
-
+    const isRisky = seg.name.toLowerCase().includes('at-risk') || seg.risk === 'High'
     return evaluateRules(sopRegistry, 'collections', {
-      earlyStage: segScore.composite >= 75,
-      escalationDue: lowComposite || highDispute,
-      dpdOver45: lowComposite,
-      noPtp: lowRecency || highDispute,
+      earlyStage: seg.name === 'Reliable Core' || seg.risk === 'Low',
+      escalationDue: isRisky || seg.risk === 'Medium',
+      dpdOver45: isRisky,
+      noPtp: isRisky,
     })
-  }, [selected, segmentScores, sopRegistry])
+  }, [seg, sopRegistry])
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
