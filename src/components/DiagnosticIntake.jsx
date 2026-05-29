@@ -134,7 +134,11 @@ export default function DiagnosticIntake({ activeTier, onTierChange, onNavigate 
           })),
           quickWins: gaps.slice(0, 3).map(g => ({
             title: `${g.domain}: ${g.severity} Priority Gap`,
-            desc: g.win
+            desc: g.win,
+            domain: g.domain,
+            severity: g.severity,
+            soxControl: g.soxControl,
+            gapDescription: g.gap
           })),
           recommendedPkg: overallScore < 3 ? 'Health Check' : overallScore < 4 ? 'Accelerator' : 'Transformation'
         })
