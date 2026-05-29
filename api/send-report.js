@@ -114,85 +114,167 @@ function buildPdf(data) {
       const scoreColor = '#6B5CE7';
       const summary = buildSummary(overallScore, domainScores, quickWins);
       const impact = estimateImpact(domainScores);
-
-      doc.fontSize(26).font('Helvetica-Bold').fillColor('#1a1a2e').text('ClearLedger', { align: 'center' });
-      doc.fontSize(12).font('Helvetica').fillColor('#666').text('OtC Maturity Assessment Report', { align: 'center' });
-      doc.moveDown(1);
-      if (company?.name) {
-        doc.fontSize(11).font('Helvetica').fillColor('#333').text(`Prepared for: ${company.name}`);
-        doc.moveDown(0.3);
-      }
-      doc.fontSize(11).font('Helvetica').fillColor('#333').text(`Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`);
-      doc.moveDown(1.5);
-
-      doc.roundedRect(50, doc.y, 495, 90, 8).fillAndStroke('#f0f0ff', '#d0d0ff');
-      const boxY = doc.y + 10;
-      doc.fontSize(36).font('Helvetica-Bold').fillColor(scoreColor).text(`${overallScore?.toFixed(1) || 'N/A'}`, 70, boxY, { width: 120, align: 'center' });
-      doc.fontSize(10).font('Helvetica').fillColor('#999').text('/ 5.0', 70, boxY + 42, { width: 120, align: 'center' });
-      doc.fontSize(18).font('Helvetica-Bold').fillColor('#1a1a2e').text(`${maturityLevel || 'N/A'}`, 200, boxY + 8);
-      doc.fontSize(11).font('Helvetica').fillColor('#666').text(`${overallScore >= target ? '\u2713 Above Target' : 'Gap from target: ' + ((target || 4) - (overallScore || 0)).toFixed(1)}`, 200, boxY + 34);
-      doc.moveDown(4.5);
-
-      if (summary) {
-        doc.fontSize(12).font('Helvetica-Bold').fillColor('#1a1a2e').text('Executive Summary');
-        doc.moveDown(0.3);
-        doc.fontSize(10).font('Helvetica').fillColor('#444').text(summary);
-        doc.moveDown(1.5);
-      }
-
-      doc.fontSize(14).font('Helvetica-Bold').fillColor('#1a1a2e').text('Domain Scorecard');
-      doc.moveDown(0.3);
-      const domainData = (domainScores || []).slice(0, 6);
-      let y = doc.y;
-      const col1X = 50;
-      const col2X = 350;
-      const col3X = 450;
-      doc.fontSize(9).font('Helvetica-Bold').fillColor('#6B5CE7');
-      doc.text('Domain', col1X, y);
-      doc.text('Score', col2X, y, { width: 50, align: 'center' });
-      doc.text('Status', col3X, y, { width: 95, align: 'right' });
-      y += 18;
-      domainData.forEach((d, i) => {
-        const bgColor = i % 2 === 0 ? '#f8f8ff' : '#ffffff';
-        doc.rect(col1X - 5, y - 2, 495, 20).fill(bgColor);
-        doc.fontSize(10).font('Helvetica').fillColor('#333').text(d.name, col1X, y);
-        doc.fontSize(10).font('Helvetica-Bold').fillColor(getColor(d.score, target)).text(d.score.toFixed(1), col2X, y, { width: 50, align: 'center' });
-        const statusLabel = d.score >= target ? 'On target' : d.score >= target - 0.5 ? 'Near target' : 'Gap';
-        doc.fontSize(9).font('Helvetica').fillColor(getColor(d.score, target)).text(statusLabel, col3X, y, { width: 95, align: 'right' });
-        y += 20;
-      });
-      doc.y = y + 5;
-      doc.moveDown(1);
-
-      if (impact.total > 0) {
-        doc.fontSize(14).font('Helvetica-Bold').fillColor('#1a1a2e').text('Estimated Annual Impact');
-        doc.moveDown(0.3);
-        impact.items.filter(i => i.amount > 0).forEach(i => {
-          doc.fontSize(10).font('Helvetica').fillColor('#333').text(`${i.name}: ${i.label}`, col1X, doc.y);
-          doc.fontSize(10).font('Helvetica-Bold').fillColor('#FFAB40').text(`~$${(i.amount / 1000).toFixed(0)}K/yr`, col3X, doc.y - 12, { width: 95, align: 'right' });
-        });
-        doc.moveDown(0.5);
-        doc.fontSize(12).font('Helvetica-Bold').fillColor('#FFAB40').text(`Total estimated annual impact: ~$${(impact.total / 1000).toFixed(0)}K`, { align: 'right' });
-        doc.moveDown(1.5);
-      }
-
       const topWins = (quickWins || []).slice(0, 3);
-      if (topWins.length > 0) {
-        doc.fontSize(14).font('Helvetica-Bold').fillColor('#1a1a2e').text('Priority Quick Wins');
-        doc.moveDown(0.3);
-        topWins.forEach((qw, i) => {
-          doc.roundedRect(50, doc.y, 495, 40, 4).fillAndStroke('#f0fff4', '#c6f6d5');
-          const wy = doc.y + 5;
-          doc.fontSize(11).font('Helvetica-Bold').fillColor('#1a1a2e').text(`${i + 1}. ${qw.title}`, 62, wy, { width: 470 });
-          doc.fontSize(9).font('Helvetica').fillColor('#666').text(qw.desc, 62, wy + 18, { width: 470 });
-          doc.moveDown(2);
-        });
-        doc.moveDown(1);
+      const roadmap = buildRoadmap(quickWins);
+      const complianceFlags = (quickWins || []).filter(qw => qw.soxControl).slice(0, 3);
+
+      const pw = doc.page.width;
+      const ph = doc.page.height;
+      const ml = 50;
+      const cw = pw - ml * 2;
+      const bgDark = '#0D1117';
+
+      doc.rect(0, 0, pw, ph).fillColor(bgDark).fill();
+
+      let yPos = 55;
+
+      function sectionHdr(label, color) {
+        doc.fontSize(9).font('Helvetica-Bold').fillColor(color).text(label, ml, yPos);
+        yPos += 16;
       }
 
-      doc.moveDown(1);
-      doc.fontSize(11).font('Helvetica').fillColor('#6B5CE7').text('Book a call: https://calendly.com/clearledger/otc-review', { align: 'center', link: 'https://calendly.com/clearledger/otc-review' });
-      doc.fontSize(8).font('Helvetica').fillColor('#999').text('APQC PCF v8.0-aligned | ClearLedger', { align: 'center' });
+      function more(needed) {
+        if (yPos + needed > ph - 50) {
+          doc.addPage();
+          doc.rect(0, 0, pw, ph).fillColor(bgDark).fill();
+          yPos = 45;
+        }
+      }
+
+      // Header
+      doc.fontSize(22).font('Helvetica-Bold').fillColor('#e8e6f0').text('ClearLedger', ml, yPos, { align: 'center', width: cw });
+      yPos += 27;
+      doc.fontSize(9).font('Helvetica').fillColor('rgba(232,230,240,0.35)').text('OtC MATURITY ASSESSMENT REPORT', ml, yPos, { align: 'center', width: cw });
+      yPos += 22;
+      if (company?.name) {
+        doc.fontSize(11).font('Helvetica').fillColor('#c8c6d0').text(company.name, ml, yPos, { align: 'center', width: cw });
+        yPos += 18;
+      }
+
+      // Score circle
+      more(190);
+      const cx = ml + cw / 2;
+      const cy = yPos + 65;
+      const radius = 62;
+      doc.circle(cx, cy, radius).lineWidth(3).strokeColor(scoreColor).stroke();
+      doc.fontSize(40).font('Helvetica-Bold').fillColor(scoreColor).text(`${overallScore?.toFixed(1) || 'N/A'}`, cx - 20, cy - 16, { width: 40, align: 'center' });
+      doc.fontSize(9).font('Helvetica').fillColor('rgba(232,230,240,0.62)').text('/ 5.0', cx - 15, cy + 12, { width: 30, align: 'center' });
+      yPos = cy + radius + 16;
+      doc.fontSize(20).font('Helvetica-Bold').fillColor(scoreColor).text(`${maturityLevel || 'N/A'}`, ml, yPos, { align: 'center', width: cw });
+      yPos += 22;
+      doc.fontSize(11).font('Helvetica').fillColor('rgba(232,230,240,0.62)').text(overallScore >= target ? '\u2713 Above target' : 'Gap: ' + ((target || 4) - (overallScore || 0)).toFixed(1), ml, yPos, { align: 'center', width: cw });
+      yPos += 26;
+
+      // Executive Summary
+      if (summary) {
+        more(90);
+        sectionHdr('Executive Summary', '#e8e6f0');
+        doc.fontSize(10).font('Helvetica').fillColor('#c8c6d0').text(summary, ml, yPos, { width: cw, lineGap: 4 });
+        yPos = doc.y + 22;
+      }
+
+      // Domain Scorecard
+      more(200);
+      sectionHdr('Domain Scorecard', '#6B5CE7');
+      const domainData = (domainScores || []).slice(0, 6);
+      const barMaxW = cw - 80;
+      domainData.forEach(d => {
+        more(40);
+        const pct = Math.min(Math.round((d.score / 5) * 100), 100);
+        const color = getColor(d.score, target);
+        doc.fontSize(11).font('Helvetica').fillColor('#c8c6d0').text(d.name, ml, yPos);
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(color).text(d.score.toFixed(1), ml + cw - 50, yPos, { width: 50, align: 'right' });
+        yPos += 18;
+        doc.fillColor('rgba(255,255,255,0.06)').roundedRect(ml, yPos, barMaxW, 5, 2.5).fill();
+        doc.fillColor(color).roundedRect(ml, yPos, Math.round(barMaxW * pct / 100), 5, 2.5).fill();
+        yPos += 18;
+      });
+      yPos += 6;
+
+      // Financial Impact
+      if (impact.total > 0) {
+        more(130);
+        sectionHdr('Estimated Annual Impact', '#FFAB40');
+        doc.fontSize(9).font('Helvetica').fillColor('rgba(232,230,240,0.62)').text('Revenue leakage and operational cost exposure based on current maturity gaps.', ml, yPos, { width: cw });
+        yPos += 16;
+        impact.items.filter(i => i.amount > 0).forEach(i => {
+          more(24);
+          doc.fontSize(10).font('Helvetica').fillColor('#c8c6d0').text(i.name, ml, yPos);
+          doc.fontSize(9).font('Helvetica').fillColor('rgba(232,230,240,0.62)').text(i.label, ml + 140, yPos);
+          doc.fontSize(10).font('Helvetica-Bold').fillColor('#FFAB40').text(`~$${(i.amount / 1000).toFixed(0)}K/yr`, ml + cw - 80, yPos, { width: 80, align: 'right' });
+          yPos += 22;
+        });
+        more(30);
+        doc.fillColor('rgba(255,255,255,0.08)').rect(ml, yPos, cw, 1).fill();
+        yPos += 10;
+        doc.fontSize(13).font('Helvetica-Bold').fillColor('#FFAB40').text(`~$${(impact.total / 1000).toFixed(0)}K total estimated annual impact`, ml + cw - 260, yPos, { width: 260, align: 'right' });
+        yPos += 28;
+      }
+
+      // Priority Quick Wins
+      if (topWins.length > 0) {
+        more(170);
+        sectionHdr('\u26A1 Priority Quick Wins', '#3DDC84');
+        topWins.forEach((qw) => {
+          more(52);
+          doc.fillColor('rgba(61,220,132,0.06)').roundedRect(ml, yPos, cw, 38, 5).fill();
+          doc.strokeColor('rgba(61,220,132,0.12)').roundedRect(ml, yPos, cw, 38, 5).stroke();
+          doc.fontSize(11).font('Helvetica-Bold').fillColor('#e8e6f0').text(qw.title, ml + 10, yPos + 6, { width: cw - 20 });
+          doc.fontSize(9).font('Helvetica').fillColor('rgba(232,230,240,0.62)').text(qw.desc, ml + 10, yPos + 24, { width: cw - 20 });
+          yPos += 48;
+        });
+        yPos += 6;
+      }
+
+      // Recommended Action Roadmap
+      {
+        more(170);
+        sectionHdr('Recommended Action Roadmap', '#4FC3F7');
+        const colW = Math.floor((cw - 20) / 3);
+        const buckets = Object.entries(roadmap);
+        const startY = yPos;
+        buckets.forEach(([bucket, items], bi) => {
+          const bx = ml + bi * (colW + 10);
+          doc.fillColor('rgba(255,255,255,0.03)').roundedRect(bx, startY, colW, 100, 4).fill();
+          doc.fontSize(8).font('Helvetica-Bold').fillColor('#4FC3F7').text(bucket, bx + 8, startY + 6, { width: colW - 16 });
+          if (items.length > 0) {
+            items.forEach((qw, qi) => {
+              doc.fontSize(8).font('Helvetica').fillColor('#c8c6d0').text(qw.domain ? `${qw.domain}: ${qw.title || qw.desc}` : (qw.title || qw.desc), bx + 8, startY + 24 + qi * 18, { width: colW - 16 });
+            });
+          } else {
+            doc.fontSize(8).font('Helvetica').fillColor('rgba(232,230,240,0.35)').text('No items', bx + 8, startY + 24, { width: colW - 16 });
+          }
+        });
+        yPos = startY + 118;
+      }
+
+      // Compliance Controls at Risk
+      if (complianceFlags.length > 0) {
+        more(100);
+        sectionHdr('Compliance Controls at Risk', '#FF6B6B');
+        doc.fontSize(9).font('Helvetica').fillColor('rgba(232,230,240,0.62)').text('SOX/Internal control gaps identified in current process maturity assessment.', ml, yPos, { width: cw });
+        yPos += 16;
+        complianceFlags.forEach(cf => {
+          more(22);
+          doc.fontSize(10).font('Helvetica').fillColor('#c8c6d0').text(cf.domain || cf.title || '', ml, yPos);
+          doc.fontSize(9).font('Helvetica').fillColor('#FF6B6B').text(cf.soxControl, ml + cw - 160, yPos, { width: 160, align: 'right' });
+          yPos += 20;
+        });
+        yPos += 8;
+      }
+
+      // CTA
+      more(140);
+      yPos += 10;
+      doc.fillColor('rgba(107,92,231,0.08)').roundedRect(ml, yPos, cw, 110, 8).fill();
+      doc.strokeColor('rgba(107,92,231,0.15)').roundedRect(ml, yPos, cw, 110, 8).stroke();
+      doc.fontSize(18).font('Helvetica-Bold').fillColor('#e8e6f0').text('Ready to close the gaps?', ml, yPos + 16, { align: 'center', width: cw });
+      doc.fontSize(10).font('Helvetica').fillColor('rgba(232,230,240,0.62)').text('Book a 30-minute call to walk through your results and build your personalized implementation roadmap.', ml, yPos + 42, { align: 'center', width: cw });
+      doc.fontSize(11).font('Helvetica-Bold').fillColor('#6B5CE7').text('https://calendly.com/clearledger/otc-review', ml, yPos + 76, { align: 'center', width: cw, link: 'https://calendly.com/clearledger/otc-review' });
+      yPos += 130;
+
+      // Footer
+      doc.fontSize(8).font('Helvetica').fillColor('rgba(232,230,240,0.35)').text('APQC PCF v8.0-aligned \u00B7 ClearLedger', ml, yPos, { align: 'center', width: cw });
 
       doc.end();
     } catch (err) { reject(err); }
