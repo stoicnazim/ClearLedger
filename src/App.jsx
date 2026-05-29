@@ -60,8 +60,8 @@ const ADVISORY_CATEGORIES = [
   { name: 'Strategy & Planning', items: ['Technology Selection', 'Treasury & Working Capital'] },
 ]
 
-export default function App() {
-  const [activeTab, setActiveTab] = useState('dashboard')
+export default function App({ initialTab }) {
+  const [activeTab, setActiveTab] = useState(initialTab || 'dashboard')
   const [theme, setTheme] = useState('dark')
   const [activeTier, setActiveTier] = useState('enterprise')
 

@@ -1,85 +1,7 @@
-import React, { useState } from 'react'
-import { Sparkles, ShieldCheck, BookOpen, BarChart3, Mail, FileWarning, ArrowRight, CheckCircle2 } from 'lucide-react'
+import React from 'react'
+import { Sparkles, ShieldCheck, BookOpen, BarChart3, Mail, FileWarning, ArrowRight } from 'lucide-react'
 
 export default function LandingPage({ onEnter }) {
-  const [email, setEmail] = useState('')
-  const [submitted, setSubmitted] = useState(false)
-  const [loading, setLoading] = useState(false)
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!email) return
-    setLoading(true)
-    // Store locally; replace with your CRM/webhook endpoint when ready
-    try {
-      localStorage.setItem('clearlogger_lead_email', email)
-      localStorage.setItem('clearlogger_lead_date', new Date().toISOString())
-    } catch (_) {}
-    setLoading(false)
-    setSubmitted(true)
-  }
-
-  if (submitted) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #0b0f19 0%, #111827 100%)',
-        padding: '2rem'
-      }}>
-        <div style={{ textAlign: 'center', maxWidth: '560px', color: '#f9fafb' }}>
-          <CheckCircle2 size={48} style={{ color: '#10b981', margin: '0 auto 1rem' }} />
-          <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '1.8rem', marginBottom: '0.25rem' }}>Your report is on its way.</h1>
-          <p style={{ color: '#9ca3af', marginBottom: '2rem', lineHeight: '1.6' }}>
-            We sent the APQC-aligned AR Maturity Benchmark to <strong style={{ color: '#f9fafb' }}>{email}</strong>
-          </p>
-
-          <div style={{
-            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '12px', padding: '1.25rem', marginBottom: '2rem', textAlign: 'left'
-          }}>
-            <h3 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '0.85rem', color: '#8b5cf6', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Your Benchmark Report Includes
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {[
-                '6-domain maturity scoring (APQC PCF v8.0)',
-                'Comparison vs Hackett Elite Benchmark (L4.2)',
-                'Automated gap analysis with SOX control mapping',
-                'Priority-ranked remediation roadmap',
-                '18 process packs reference guide'
-              ].map((item, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#d1d5db' }}>
-                  <CheckCircle2 size={14} style={{ color: '#22d3ee', flexShrink: 0 }} /> {item}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center' }}>
-            <p style={{ color: '#6b7280', fontSize: '0.8rem' }}>Meanwhile, explore the platform:</p>
-            <button
-              onClick={onEnter}
-              style={{
-                background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-                color: 'white', border: 'none',
-                padding: '0.75rem 2rem', borderRadius: '8px',
-                fontWeight: '600', fontSize: '1rem',
-                cursor: 'pointer',
-                display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-                boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)'
-              }}
-            >
-              Launch ClearLedger Platform <ArrowRight size={16} />
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div style={{
       minHeight: '100vh',
@@ -177,45 +99,27 @@ export default function LandingPage({ onEnter }) {
             APQC PCF v8.0 diagnostic tools, 18 process packs, and AI-powered AR agents<br />
             built for shared service centers and business process outsourcers.
           </p>
-          <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.5rem', maxWidth: '440px' }}>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter work email for free benchmark report"
-              required
-              style={{
-                flex: 1,
-                padding: '0.75rem 1rem',
-                borderRadius: '8px',
-                border: '1px solid rgba(255,255,255,0.15)',
-                background: 'rgba(255,255,255,0.05)',
-                color: '#f9fafb',
-                fontSize: '0.9rem',
-                outline: 'none'
-              }}
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-                color: 'white',
-                border: 'none',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '8px',
-                fontWeight: 600,
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                opacity: loading ? 0.7 : 1
-              }}
-            >
-              {loading ? 'Sending...' : 'Get Free Report'}
-            </button>
-          </form>
-          <p style={{ color: '#6b7280', fontSize: '0.75rem', marginTop: '0.5rem' }}>
-            No spam. We'll email your AR maturity benchmark + score.
+          <button
+            onClick={onEnter}
+            style={{
+              background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+              color: 'white',
+              border: 'none',
+              padding: '0.85rem 2rem',
+              borderRadius: '8px',
+              fontWeight: 600,
+              fontSize: '1rem',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)'
+            }}
+          >
+            Start Free Maturity Assessment <ArrowRight size={18} />
+          </button>
+          <p style={{ color: '#6b7280', fontSize: '0.75rem', marginTop: '0.75rem' }}>
+            No credit card. 2 minutes. Get your PDF report instantly.
           </p>
         </div>
         <div style={{
@@ -351,10 +255,13 @@ export default function LandingPage({ onEnter }) {
             fontWeight: 600,
             fontSize: '1rem',
             cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
             boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)'
           }}
         >
-          Launch ClearLedger <ArrowRight size={16} style={{ marginLeft: '0.25rem', verticalAlign: 'middle' }} />
+          Start Assessment <ArrowRight size={16} />
         </button>
       </section>
 

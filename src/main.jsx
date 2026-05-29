@@ -8,8 +8,10 @@ import './index.css'
 function AppWrapper() {
   const [showApp, setShowApp] = useState(false)
   const [transitioning, setTransitioning] = useState(false)
+  const [initialTab, setInitialTab] = useState('dashboard')
 
-  const handleEnter = () => {
+  const handleEnter = (tab) => {
+    setInitialTab(tab || 'diagnostic')
     setTransitioning(true)
     setTimeout(() => setShowApp(true), 300)
   }
@@ -19,7 +21,7 @@ function AppWrapper() {
       {showApp ? (
         <div className={transitioning ? '' : ''} style={{ animation: transitioning ? 'none' : 'fadeIn 0.3s ease' }}>
           <MockDatabaseProvider>
-            <App />
+            <App initialTab={initialTab} />
           </MockDatabaseProvider>
         </div>
       ) : (
