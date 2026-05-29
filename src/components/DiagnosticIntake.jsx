@@ -3,6 +3,10 @@ import { CheckCircle2, ChevronRight, AlertTriangle, Lightbulb, Play, ClipboardLi
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts'
 
 export default function DiagnosticIntake({ activeTier, onTierChange, onNavigate }) {
+  const [email, setEmail] = useState('')
+  const [companyName, setCompanyName] = useState('')
+  const [emailStatus, setEmailStatus] = useState('idle') // idle | sending | success | error
+
   const [scores, setScores] = useState({
     credit: 2,
     billing: 3,
@@ -102,6 +106,48 @@ export default function DiagnosticIntake({ activeTier, onTierChange, onNavigate 
   }
 
   const gaps = getGapsAndWins()
+
+  const domainIcons = { credit: '🏦', billing: '📄', collections: '📞', cashApp: '💳', disputes: '⚖️', compliance: '🔒' }
+
+  const overallScore = Object.values(scores).reduce((a, b) => a + b, 0) / Object.keys(scores).length
+  const overallLevel = overallScore >= 4.5 ? 'Autonomous' : overallScore >= 3.5 ? 'Predictive' : overallScore >= 2.5 ? 'Optimized' : overallScore >= 1.5 ? 'Standardized' : 'Reactive'
+  const overallColor = overallScore >= 4.5 ? 'var(--success)' : overallScore >= 3.5 ? 'var(--accent-cyan)' : overallScore >= 2.5 ? 'var(--accent-purple)' : overallScore >= 1.5 ? 'var(--warning)' : 'var(--error)'
+
+  const handleSendReport = async () => {
+    if (!email) return
+    setEmailStatus('sending')
+    try {
+      const res = await fetch('/api/send-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          overallScore,
+          maturityLevel: overallLevel,
+          maturityColor: overallColor.replace('var(', '').replace(')', ''),
+          target: 4.2,
+          company: companyName ? { name: companyName } : undefined,
+          domainScores: domains.map(d => ({
+            name: d.name,
+            icon: domainIcons[d.id],
+            score: scores[d.id]
+          })),
+          quickWins: gaps.map(g => ({
+            title: `${g.domain}: ${g.severity} Priority Gap`,
+            desc: g.win
+          })),
+          recommendedPkg: overallScore < 3 ? 'Health Check' : overallScore < 4 ? 'Accelerator' : 'Transformation'
+        })
+      })
+      if (res.ok) {
+        setEmailStatus('success')
+      } else {
+        setEmailStatus('error')
+      }
+    } catch {
+      setEmailStatus('error')
+    }
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -303,6 +349,71 @@ export default function DiagnosticIntake({ activeTier, onTierChange, onNavigate 
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Email Report */}
+      <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <h3 style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>
+          Email Report
+        </h3>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+          Send this maturity assessment to your inbox as a formatted report.
+        </p>
+        {emailStatus === 'success' ? (
+          <div style={{ padding: '1rem', background: 'var(--success-glow)', borderRadius: '8px', border: '1px solid rgba(52,211,153,0.2)', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)' }}>
+            <CheckCircle2 size={16} /> Report sent! Check your inbox.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <input
+              type="text"
+              value={companyName}
+              onChange={e => setCompanyName(e.target.value)}
+              placeholder="Company (optional)"
+              style={{
+                flex: '0 0 160px',
+                padding: '0.5rem 0.75rem',
+                borderRadius: '6px',
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'var(--bg-tertiary)',
+                color: 'var(--text-primary)',
+                fontSize: '0.8rem',
+                outline: 'none',
+                minWidth: '120px'
+              }}
+            />
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="your@email.com"
+              onKeyDown={e => e.key === 'Enter' && handleSendReport()}
+              style={{
+                flex: 1,
+                padding: '0.5rem 0.75rem',
+                borderRadius: '6px',
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'var(--bg-tertiary)',
+                color: 'var(--text-primary)',
+                fontSize: '0.8rem',
+                outline: 'none',
+                minWidth: '200px'
+              }}
+            />
+            <button
+              className="btn-primary"
+              onClick={handleSendReport}
+              disabled={emailStatus === 'sending' || !email}
+              style={{ padding: '0.5rem 1.25rem', fontSize: '0.8rem', opacity: emailStatus === 'sending' || !email ? 0.6 : 1 }}
+            >
+              {emailStatus === 'sending' ? 'Sending...' : 'Send Report'}
+            </button>
+            {emailStatus === 'error' && (
+              <span style={{ color: 'var(--error)', fontSize: '0.75rem' }}>Failed to send. Try again.</span>
+            )}
           </div>
         )}
       </div>
